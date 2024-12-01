@@ -13,6 +13,7 @@ import fitz
 import bibtexparser
 import json
 import pandas as pd
+from pkg_resources import resource_filename
 
 
 class ISCAArchiveProcessorDataset(Dataset):
@@ -33,19 +34,28 @@ class ISCAArchiveProcessorDataset(Dataset):
 			the list of conferences to focus on (if None, all conferences are loaded!)
 		"""
 		self._logger: logging.Logger = logging.getLogger(self.__class__.__name__)
-		self._root_dir: pathlib.Path = root_dir
+		self._metadata_dir: pathlib.Path = root_dir/"metadata"
+		self._html_root_dir: pathlib.Path = root_dir/"archive"
 		self._list_conferences: list[str] | None = list_conference
-		self._list_files: list[pathlib.Path] = []
+		self._list_entries: list[tuple[dict]] = list()
+		self._fill_entries()
 
-		# Ensure the list of conference contains something
+	def _fill_entries(self):
 		if self._list_conferences is None:
-			self._list_conferences = []
-			for path in self._root_dir.iterdir():
-				if path.is_dir():
-					if path.name not in ["pdfs", "resources"]:
-						self._list_conferences.append(path.name)
+			raise Exception("oupsy")
 
-		self._generate_file_list()
+		for conf in self._list_conferences:
+			conf_metadata_file = self._metadata_dir/f"{conf}.json"
+			with open(conf_metadata_file, 'r') as f_conf:
+				conf_metadata = json.load(f_conf)
+				conf_info = dict()
+				conf_info["title"] = conf_metadata["title"]
+				conf_info["series"] = conf_metadata["series"]
+				conf_info["year"] = conf_metadata["year"]
+				conf_info["id"] = conf
+				for cur_paper_id, cur_paper_entry in conf_metadata["papers"].items():
+					cur_paper_entry["paper_id"] = cur_paper_id
+					self._list_entries.append((conf_info, cur_paper_entry))
 
 	def __len__(self) -> int:
 		"""Get the number of items from the archive
@@ -56,7 +66,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 			the number of items in the archive
 
 		"""
-		return len(self._list_files)
+		return len(self._list_entries)
 
 	def __getitem__(self, idx: int) -> dict[str, Any]:
 		"""Get one item from the archive
@@ -76,113 +86,94 @@ class ISCAArchiveProcessorDataset(Dataset):
 		Exception
 			If any loading issues happen
 		"""
-		(conference, html_basename) = self._list_files[idx]
+		(conf_info, paper_entry) = self._list_entries[idx]
 
-		# Load the HTML file
-		html_file = self._root_dir / conference / html_basename
-		html_tree = html.parse(html_file)
-		html_root = html_tree.getroot()
-
-		# Get information
-		try:
-			title = self._get_title(html_root)
-		except Exception as ex:
-			raise Exception(f'File "{html_basename}" doesn\'t seem valid (title processing failure): {ex}')
-
-		abstract = self._get_abstract(html_root)
+		conf_id = conf_info["id"]
+		paper_id = paper_entry["paper_id"]
+		title = paper_entry["title"]
+		abstract = "\n".join(paper_entry["abstract"])
 
 		pdf_file = None
 		try:
-			pdf_file = self._get_pdf(html_root, conference)
+			pdf_file = self._get_pdf(conf_id, paper_id)
 		except Exception as ex:
-			if False:
-				raise Exception(f'File "{html_basename}" doesn\'t seem valid (pdf extraction failure): {ex}')
-			else:
-				self._logger.warning(f'File "{html_basename}" doesn\'t seem valid (pdf extraction failure): {ex}')
+			self._logger.warning(f'The submission ID "{paper_id}" doesn\'t seem valid (pdf extraction failure): {ex}')
 
 		references = []
 		try:
 			if pdf_file is not None:
 				references = self._extract_biblio_from_article(pdf_file)
 		except Exception as ex:
-			if False:
-				raise Exception(f'File "{html_basename}" doesn\'t seem valid (references extraction failure): {ex}')
-			else:
-				self._logger.warning(
-					f'File "{html_basename}" doesn\'t seem valid (references extraction failure): {ex}'
-				)
+			self._logger.warning(
+				f'The submission "{paper_id}" doesn\'t seem valid (references extraction failure): {ex}'
+			)
 
-		serie, year = conference.split("_")
+		is_area = None
+		try:
+			is_area = self._get_area(conf_id, paper_entry)
+			self._logger.info(f"==> The area for {paper_id} is {is_area}")
+		except Exception as ex:
+			self._logger.warning(
+				f'The submission "{paper_id}" doesn\'t any area assigned: {ex}'
+			)
+
 		return {
 			"title": title,
 			"abstract": abstract,
-			"serie": serie,
-			"year": year,
-			"html_file_name": html_file,
+			"serie": conf_info["series"],
+			"year": conf_info["year"],
 			"pdf_path": pdf_file,
 			"references": references,
+			"is_area": is_area
 		}
 
-	def _generate_file_list(self) -> list[tuple[str, str]]:
-		"""Internal helper to generate the list of items (1 item = 1 file)
+	def _get_area(self, conference: str, paper: dict[str, Any]) -> str | None:
 
-		Returns
-		-------
-		list[tuple[str, str]]
-			The list of files in form of a tuple (the conference name, the name of the item/file)
-		"""
-		self._list_files = []
-		for conf_name in self._list_conferences:
-			conf_dir = self._root_dir / conf_name
-			for path in conf_dir.iterdir():
-				if path.name.endswith(".html") and (path.name != "index.html"):
-					self._list_files.append((conf_name, path.name))
+		# Prepare the paper id
+		paper_id = paper["original"]
+		if not paper_id.startswith("i"):
+			paper_id = f"{int(paper_id):04d}"
 
-	def _get_abstract(self, html_root: etree.Element) -> str:
-		"""Internal helper to extract the abstract of the item
+		# NOTE: could be optimized to not load this everytime !
+		conf_resource = pathlib.Path(resource_filename("isca_archive", f'resources/is_areas/{conference}.tsv'))
+		if not conf_resource.is_file():
+			raise Exception("The area file doesn't exist")
 
-		Parameters
-		----------
-		html_root : etree.Element
-			the HTML element of the current item
+		df_conf_areas= pd.read_csv(
+			conf_resource,
+			sep="\t",
+			dtype={'paper_id': str}
+		)
 
-		Returns
-		-------
-		str
-			the abstract
-
-		Raises
-		------
-		Exception
-			If there was any issue during the parsing of the HTML file
-			=> no abstract!
-
-		"""
-		# Define the XPath expression to find a div with a specific class
-		abstract_xpath = ".//div[@id='abstract']/p"
-
-		# Find all matching div elements
-		candidates = html_root.findall(abstract_xpath)
-
-		if candidates:
-			try:
-				text = candidates[0].text.strip().replace("\n", " ")
-			except Exception as ex:
-				# There is some formatting, so just pick the text here!
-				text = candidates[0].xpath("string()").strip().replace("\n", " ")
-			return text
+		area_id = df_conf_areas.loc[df_conf_areas.paper_id == paper_id, "area_id"]
+		if len(area_id) == 0:
+			raise Exception(f"The paper doesn't have any area assigned to it ({paper['original']})")
 		else:
-			raise Exception("No abstract has been found")
+			area_id = area_id.item()
 
-	def _get_pdf(self, html_root: etree.Element, conference: str) -> pathlib.Path:
+		if area_id == "00":
+			return None
+
+		df_area_labels = pd.read_csv(
+			resource_filename("isca_archive", 'resources/is_area_labels.tsv'),
+			sep="\t"
+		)
+
+
+		label = df_area_labels.loc[(df_area_labels.primary_id == area_id) & pd.isna(df_area_labels.secondary_id), "label"].item()
+		return label
+
+
+
+	def _get_pdf(self, conference: str, paper_id: str) -> pathlib.Path:
 		"""Internal helper to get the PDF file associated to the item
 
 		Parameters
 		----------
-		html_root : etree.Element
-			the HTML element corresponding to the item
 		conference : str
 			the conference name of the item
+		paper_id : str
+		    the paper identifier (not the submission number, the ISCA archive one)
 
 		Returns
 		-------
@@ -191,58 +182,20 @@ class ISCAArchiveProcessorDataset(Dataset):
 
 		Raises
 		------
+		FileNotFoundError
+		    if the PDF file does not exist
 		Exception
-			if no PDF were found or the PDF is corrupted
+			if the PDF is corrupted
 
 		"""
-		# Define the XPath expression to find a div with a specific class
-		pdf_xpath = ".//div[@id='content']/div/a/@href"
-
-		# Find all matching div elements
-		href = html_root.xpath(pdf_xpath)[0]
-
-		if href:
-			pdf_path = self._root_dir / conference / href
+		pdf_path = self._html_root_dir / conference / f"{paper_id}.pdf"
+		if pdf_path.exists():
 			doc = fitz.open(pdf_path)
 			if doc.page_count <= 0:
 				raise Exception("the PDF doesn't contain any pages!")
 			return pdf_path
 		else:
-			raise Exception("No PDF link has been found")
-
-	def _get_title(self, html_root: etree.Element) -> str:
-		"""Internal helper to extract the title of the item
-
-		Parameters
-		----------
-		html_root : etree.Element
-			the HTML element corresponding to the item
-
-		Returns
-		-------
-		str
-			the title of the item
-
-		Raises
-		------
-		Exception
-			Parsing issue => couldn't find a title!
-		"""
-		# Define the XPath expression to find a div with a specific class
-		title_xpath = ".//div[@id='global-info']/h3"
-
-		# Find all matching div elements
-		candidates = html_root.findall(title_xpath)
-
-		if candidates:
-			try:
-				text = candidates[0].text.strip().replace("\n", " ")
-			except Exception as ex:
-				# There is some formatting, so just pick the text here!
-				text = candidates[0].xpath("string()").strip().replace("\n", " ")
-			return text
-		else:
-			raise Exception("No title has been found")
+			raise FileNotFoundError(f"The following PDF file does not exist: {pdf_path}")
 
 	def _find_references(self, doc: fitz.fitz.Document, start_page: int, num_headers: bool) -> list[str]:
 		"""Internal helper to determine where the reference section starts and load all the lines of this section in a list
@@ -373,6 +326,203 @@ class ISCAArchiveProcessorDataset(Dataset):
 		ref_titles, _ = self._retrieve_references(lines)
 
 		return ref_titles
+
+class ExternalISCAArchiveProcessorDataset(ISCAArchiveProcessorDataset):
+	"""Helper class to load the raw ISCA Archive and process it
+
+	This class should mainly be used to generate a TSV file which can
+	then be loaded by ISCAArchiveProcessedDataset.
+	"""
+
+	def __init__(self, root_dir: pathlib.Path, list_conference: list[str] | None = None):
+		super().__init__(root_dir, list_conference)
+		self._archive_dir = root_dir/"archive"
+
+	def __getitem__(self, idx: int) -> dict[str, Any]:
+		"""Get one item from the archive
+
+		Parameters
+		----------
+		idx : int
+			the index of wanted item
+
+		Returns
+		-------
+		dict[str, Any]
+			The dictionnary containing the values for the wanted item
+
+		Raises
+		------
+		Exception
+			If any loading issues happen
+		"""
+		(conference, html_basename) = self._list_files[idx]
+
+		# Load the HTML file
+		html_file = self._archive_dir / conference / html_basename
+		html_tree = html.parse(html_file)
+		html_root = html_tree.getroot()
+
+		# Get information
+		try:
+			title = self._get_title(html_root)
+		except Exception as ex:
+			raise Exception(f'File "{html_basename}" doesn\'t seem valid (title processing failure): {ex}')
+
+		abstract = self._get_abstract(html_root)
+
+		pdf_file = None
+		try:
+			pdf_file = self._get_pdf(html_root, conference)
+		except Exception as ex:
+			if False:
+				raise Exception(f'File "{html_basename}" doesn\'t seem valid (pdf extraction failure): {ex}')
+			else:
+				self._logger.warning(f'File "{html_basename}" doesn\'t seem valid (pdf extraction failure): {ex}')
+
+		references = []
+		try:
+			if pdf_file is not None:
+				references = self._extract_biblio_from_article(pdf_file)
+		except Exception as ex:
+			if False:
+				raise Exception(f'File "{html_basename}" doesn\'t seem valid (references extraction failure): {ex}')
+			else:
+				self._logger.warning(
+					f'File "{html_basename}" doesn\'t seem valid (references extraction failure): {ex}'
+				)
+
+		serie, year = conference.split("_")
+		return {
+			"title": title,
+			"abstract": abstract,
+			"serie": serie,
+			"year": year,
+			"html_file_name": html_file,
+			"pdf_path": pdf_file,
+			"references": references,
+		}
+
+	def _generate_file_list(self) -> list[tuple[str, str]]:
+		"""Internal helper to generate the list of items (1 item = 1 file)
+
+		Returns
+		-------
+		list[tuple[str, str]]
+			The list of files in form of a tuple (the conference name, the name of the item/file)
+		"""
+		self._list_files = []
+		for conf_name in self._list_conferences:
+			conf_dir = self._archive_dir / conf_name
+			for path in conf_dir.iterdir():
+				if path.name.endswith(".html") and (path.name != "index.html"):
+					self._list_files.append((conf_name, path.name))
+
+	def _get_abstract(self, html_root: etree.Element) -> str:
+		"""Internal helper to extract the abstract of the item
+
+		Parameters
+		----------
+		html_root : etree.Element
+			the HTML element of the current item
+
+		Returns
+		-------
+		str
+			the abstract
+
+		Raises
+		------
+		Exception
+			If there was any issue during the parsing of the HTML file
+			=> no abstract!
+
+		"""
+		# Define the XPath expression to find a div with a specific class
+		abstract_xpath = ".//div[@id='abstract']/p"
+
+		# Find all matching div elements
+		candidates = html_root.findall(abstract_xpath)
+
+		if candidates:
+			try:
+				text = candidates[0].text.strip().replace("\n", " ")
+			except Exception as ex:
+				# There is some formatting, so just pick the text here!
+				text = candidates[0].xpath("string()").strip().replace("\n", " ")
+			return text
+		else:
+			raise Exception("No abstract has been found")
+
+	def _get_pdf(self, html_root: etree.Element, conference: str) -> pathlib.Path:
+		"""Internal helper to get the PDF file associated to the item
+
+		Parameters
+		----------
+		html_root : etree.Element
+			the HTML element corresponding to the item
+		conference : str
+			the conference name of the item
+
+		Returns
+		-------
+		pathlib.Path
+			the path to the PDF File
+
+		Raises
+		------
+		Exception
+			if no PDF were found or the PDF is corrupted
+
+		"""
+		# Define the XPath expression to find a div with a specific class
+		pdf_xpath = ".//div[@id='content']/div/a/@href"
+
+		# Find all matching div elements
+		href = html_root.xpath(pdf_xpath)[0]
+
+		if href:
+			pdf_path = self._archive_dir / conference / href
+			doc = fitz.open(pdf_path)
+			if doc.page_count <= 0:
+				raise Exception("the PDF doesn't contain any pages!")
+			return pdf_path
+		else:
+			raise Exception("No PDF link has been found")
+
+	def _get_title(self, html_root: etree.Element) -> str:
+		"""Internal helper to extract the title of the item
+
+		Parameters
+		----------
+		html_root : etree.Element
+			the HTML element corresponding to the item
+
+		Returns
+		-------
+		str
+			the title of the item
+
+		Raises
+		------
+		Exception
+			Parsing issue => couldn't find a title!
+		"""
+		# Define the XPath expression to find a div with a specific class
+		title_xpath = ".//div[@id='global-info']/h3"
+
+		# Find all matching div elements
+		candidates = html_root.findall(title_xpath)
+
+		if candidates:
+			try:
+				text = candidates[0].text.strip().replace("\n", " ")
+			except Exception as ex:
+				# There is some formatting, so just pick the text here!
+				text = candidates[0].xpath("string()").strip().replace("\n", " ")
+			return text
+		else:
+			raise Exception("No title has been found")
 
 
 class ISCAArchiveProcessedDataset(Dataset):
