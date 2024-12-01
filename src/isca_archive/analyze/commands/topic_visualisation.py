@@ -10,28 +10,8 @@ from isca_archive.analyze.common.dataset import ISCAArchiveProcessedDataset
 
 
 def add_subparsers(subparsers):
-
 	parser = subparsers.add_parser(
 		"visualize_topics", help="Visualise the topic previously extracted using BERTopic"
-	)
-
-	parser.add_argument(
-		"--ignore-research-keywords",
-		default=False,
-		action="store_true",
-		help="Add the research papers/abstracts' keywords to the list of stop words"
-	)
-	parser.add_argument(
-		"--ignore-data-keywords",
-		default=False,
-		action="store_true",
-		help="Add the data analysis keywords to the list of stop words"
-	)
-	parser.add_argument(
-		"--ignore-ml-keywords",
-		default=False,
-		action="store_true",
-		help="Add the Machine Learning keywords to the list of stop words"
 	)
 
 	# Add arguments
@@ -61,13 +41,13 @@ def main(args: argparse.Namespace):
 	figure_dir = pathlib.Path(args.output_dir)
 	figure_dir.mkdir(parents=True, exist_ok=True)
 
-	fig = topic_model.visualize_barchart()
+	fig = topic_model.visualize_barchart(custom_labels=True)
 	fig.write_html(figure_dir / "barchar.html")
 
-	fig = topic_model.visualize_topics()
+	fig = topic_model.visualize_topics(custom_labels=True)
 	fig.write_html(figure_dir / "topics.html", include_plotlyjs=True)
 
-	fig = topic_model.visualize_heatmap()
+	fig = topic_model.visualize_heatmap(custom_labels=True)
 	fig.write_html(figure_dir / "heatmap.html", include_plotlyjs=True)
 
 	fig = topic_model.visualize_documents(
@@ -75,21 +55,22 @@ def main(args: argparse.Namespace):
 		embeddings=embeddings,
 		hide_document_hover=True,
 		hide_annotations=True,
+		custom_labels=True
 	)
 	fig.write_html(figure_dir / "document_embeddings.html")
 
 	# Distribution
 	topic_distr, _ = topic_model.approximate_distribution(docs["abstract"])
-	fig = topic_model.visualize_distribution(topic_distr[1])
+	fig = topic_model.visualize_distribution(topic_distr[1], custom_labels=True)
 	fig.write_html(figure_dir / "topic_distribution.html")
 
 	# Hierarchical topic visualisation
 	hierarchical_topics = topic_model.hierarchical_topics(docs["abstract"])
-	fig = topic_model.visualize_hierarchy(hierarchical_topics=hierarchical_topics)
+	fig = topic_model.visualize_hierarchy(hierarchical_topics=hierarchical_topics, custom_labels=True)
 	fig.write_html(figure_dir / "hierarchical_topics.html")
 
 	# Evolution over time
 	timestamps = docs.year
 	topics_over_time = topic_model.topics_over_time(docs["abstract"], timestamps)
-	fig = topic_model.visualize_topics_over_time(topics_over_time)
+	fig = topic_model.visualize_topics_over_time(topics_over_time, custom_labels=True)
 	fig.write_html(figure_dir / "topics_over_time.html")
