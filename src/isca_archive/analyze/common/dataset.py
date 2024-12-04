@@ -23,7 +23,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 	then be loaded by ISCAArchiveProcessedDataset.
 	"""
 
-	def __init__(self, root_dir: pathlib.Path, list_conference: list[str] | None = None):
+	def __init__(self, root_dir: pathlib.Path, list_conference: list[str] | None = None, load_full_text: bool = False):
 		"""Initialisation
 
 		Parameters
@@ -38,6 +38,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 		self._html_root_dir: pathlib.Path = root_dir/"archive"
 		self._list_conferences: list[str] | None = list_conference
 		self._list_entries: list[tuple[dict]] = list()
+		self._load_full_text: bool = load_full_text
 		self._fill_entries()
 
 	def _fill_entries(self):
@@ -55,6 +56,9 @@ class ISCAArchiveProcessorDataset(Dataset):
 				conf_info["id"] = conf
 				for cur_paper_id, cur_paper_entry in conf_metadata["papers"].items():
 					cur_paper_entry["paper_id"] = cur_paper_id
+					if cur_paper_entry["abstract"][0].startswith("[") or cur_paper_entry["abstract"][0].startswith("("):
+						self._logger.warning(f"ignore paper {cur_paper_id} due to an invalid abstract")
+						continue
 					self._list_entries.append((conf_info, cur_paper_entry))
 
 	def __len__(self) -> int:
@@ -96,6 +100,11 @@ class ISCAArchiveProcessorDataset(Dataset):
 		pdf_file = None
 		try:
 			pdf_file = self._get_pdf(conf_id, paper_id)
+			if self._load_full_text:
+				tmp = self._load_pdf_content(pdf_file)
+				if tmp is not None:
+					abstract = tmp
+
 		except Exception as ex:
 			self._logger.warning(f'The submission ID "{paper_id}" doesn\'t seem valid (pdf extraction failure): {ex}')
 
@@ -111,7 +120,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 		is_area = None
 		try:
 			is_area = self._get_area(conf_id, paper_entry)
-			self._logger.info(f"==> The area for {paper_id} is {is_area}")
+			self._logger.debug(f"==> The area for {paper_id} is {is_area}")
 		except Exception as ex:
 			self._logger.warning(
 				f'The submission "{paper_id}" doesn\'t any area assigned: {ex}'
@@ -163,8 +172,6 @@ class ISCAArchiveProcessorDataset(Dataset):
 		label = df_area_labels.loc[(df_area_labels.primary_id == area_id) & pd.isna(df_area_labels.secondary_id), "label"].item()
 		return label
 
-
-
 	def _get_pdf(self, conference: str, paper_id: str) -> pathlib.Path:
 		"""Internal helper to get the PDF file associated to the item
 
@@ -197,7 +204,19 @@ class ISCAArchiveProcessorDataset(Dataset):
 		else:
 			raise FileNotFoundError(f"The following PDF file does not exist: {pdf_path}")
 
-	def _find_references(self, doc: fitz.fitz.Document, start_page: int, num_headers: bool) -> list[str]:
+	def _load_pdf_content(self, pdf_path: pathlib.Path) -> str | None:
+		raise NotImplementedError("This is not yet implemented")
+		# txt = None
+
+		# with fitz.open(pdf_path) as doc:  # open document
+		# 	txt = "\n\n".join([page.get_text() for page in doc])
+		# # import pymupdf4llm
+		# # txt = pymupdf4llm.to_markdown(pdf_path, show_progress=False)
+		# print(txt.strip())
+		# return txt
+
+
+	def _find_references(self, doc: fitz.Document, start_page: int, num_headers: bool) -> list[str]:
 		"""Internal helper to determine where the reference section starts and load all the lines of this section in a list
 
 		The start of the reference section is determined if the line only contains the term "Reference" prefixed (or not) by the number of the section
