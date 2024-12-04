@@ -36,19 +36,18 @@ def main(args: argparse.Namespace):
 	# Generate Embeddings
 	embeddings = embedding_model.encode(docs["abstract"], show_progress_bar=True)
 
-	####################################################################
-	# Visualisation
+	# Generate the figures
 	figure_dir = pathlib.Path(args.output_dir)
 	figure_dir.mkdir(parents=True, exist_ok=True)
 
-	fig = topic_model.visualize_barchart(custom_labels=True)
-	fig.write_html(figure_dir / "barchar.html")
+	fig = topic_model.visualize_barchart(custom_labels=True, width=500, top_n_topics=-1, n_words=-1)
+	fig.write_html(figure_dir / "topics_decomposition.html")
 
 	fig = topic_model.visualize_topics(custom_labels=True)
-	fig.write_html(figure_dir / "topics.html", include_plotlyjs=True)
+	fig.write_html(figure_dir / "topics_map.html", include_plotlyjs=True)
 
 	fig = topic_model.visualize_heatmap(custom_labels=True)
-	fig.write_html(figure_dir / "heatmap.html", include_plotlyjs=True)
+	fig.write_html(figure_dir / "topics_similarity_heatmap.html", include_plotlyjs=True)
 
 	fig = topic_model.visualize_documents(
 		docs["abstract"],
@@ -62,7 +61,7 @@ def main(args: argparse.Namespace):
 	# Distribution
 	topic_distr, _ = topic_model.approximate_distribution(docs["abstract"])
 	fig = topic_model.visualize_distribution(topic_distr[1], custom_labels=True)
-	fig.write_html(figure_dir / "topic_distribution.html")
+	fig.write_html(figure_dir / "distribution_topics.html")
 
 	# Hierarchical topic visualisation
 	hierarchical_topics = topic_model.hierarchical_topics(docs["abstract"])
@@ -74,3 +73,7 @@ def main(args: argparse.Namespace):
 	topics_over_time = topic_model.topics_over_time(docs["abstract"], timestamps)
 	fig = topic_model.visualize_topics_over_time(topics_over_time, custom_labels=True)
 	fig.write_html(figure_dir / "topics_over_time.html")
+
+	# Evolution over time
+	fig= topic_model.visualize_term_rank(log_scale=True, custom_labels=True)
+	fig.write_html(figure_dir / "terms_rank_across_topics.html")

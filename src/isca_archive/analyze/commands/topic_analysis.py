@@ -55,6 +55,20 @@ def add_subparsers(subparsers):
 		help="Add the Machine Learning keywords to the list of stop words"
 	)
 
+	# Control
+	parser.add_argument(
+		"--nb-topics",
+		default=40,
+		type=int,
+		help="The number of topics"
+	)
+	parser.add_argument(
+		"--nb-words",
+		default=20,
+		type=int,
+		help="The number of top words per topic"
+	)
+
 	# LLM support
 	parser.add_argument(
 		"--use-llama",
@@ -200,8 +214,8 @@ def main(args: argparse.Namespace):
 		hdbscan_model=hdbscan_model,
 		vectorizer_model=vectorizer_model,
 		representation_model=representation_model,
-		top_n_words=10,  # FIXME: hardcoded
-		nr_topics=40,  # FIXME: hardcoded
+		top_n_words=args.nb_words,
+		nr_topics=args.nb_topics,
 		verbose=True,
 	)
 
