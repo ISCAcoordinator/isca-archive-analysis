@@ -95,7 +95,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 		conf_id = conf_info["id"]
 		paper_id = paper_entry["paper_id"]
 		title = paper_entry["title"]
-		abstract = "\n".join(paper_entry["abstract"])
+		abstract = "\n".join(paper_entry["abstract"]).strip()
 
 		pdf_file = None
 		try:
