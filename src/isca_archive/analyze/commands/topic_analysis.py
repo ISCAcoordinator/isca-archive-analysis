@@ -253,4 +253,4 @@ def main(args: argparse.Namespace):
 		save_embedding_model=embedding_model,
 	)
 
-	docs.to_csv(output_dir / "docs_with_topics.tsv", sep="\t", index=False)
+	docs.to_json(output_dir / "docs_with_topics.json", default_handler=str)

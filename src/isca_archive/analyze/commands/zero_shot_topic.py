@@ -126,5 +126,5 @@ def main(args: argparse.Namespace):
 		serialization="safetensors",
 	)
 
-	docs.to_csv(output_dir / "docs_with_topics.tsv", sep="\t", index_label="AbstractID")
+	docs.to_json(output_dir / "docs_with_topics.json", default_handler=str)
 	topic_info.to_csv(output_dir / "topic_info.tsv", sep="\t", index=False)

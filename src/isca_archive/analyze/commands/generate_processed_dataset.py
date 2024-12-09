@@ -38,4 +38,4 @@ def main(args: argparse.Namespace):
 			docs.append(dataset[i])
 
 	docs = pd.DataFrame(docs)
-	docs.to_csv(args.output_file, sep="\t", index=False)
+	docs.to_json(args.output_file, default_handler=str)
