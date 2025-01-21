@@ -11,6 +11,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sentence_transformers import SentenceTransformer
 from umap import UMAP
 from hdbscan import HDBSCAN
+from sklearn.cluster import KMeans
+
+
+import pandas as pd
 
 # File / Dataset
 from isca_archive.analyze.common.dataset import ISCAArchiveProcessedDataset
@@ -132,7 +136,7 @@ def configure_llama(token: str) -> BaseRepresentation:
 	# System prompt describes information given to all conversations
 	system_prompt = """
 	<s>[INST] <<SYS>>
-	You are a helpful, respectful and honest assistant for labeling topics.
+	You are a helpful, respectful and honest expert in speech science and speech technology acting as an assistantfor labeling topics.
 	<</SYS>>
 	"""
 
@@ -145,7 +149,8 @@ def configure_llama(token: str) -> BaseRepresentation:
 
 	The topic is described by the following keywords: 'meat, beef, eat, eating, emissions, steak, food, health, processed, chicken'.
 
-	Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more.
+	Based on the information about the topic above, please create a short label of this topic.
+	Make sure you to only return the label and nothing more.
 
 	[/INST] Environmental impacts of eating meat
 	"""
@@ -158,7 +163,8 @@ def configure_llama(token: str) -> BaseRepresentation:
 
 	The topic is described by the following keywords: '[KEYWORDS]'.
 
-	Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more.
+	Based on the information about the topic above, please create a short label of this topic.
+	Make sure you to only return the label and nothing more.
 	[/INST]
 	"""
 	prompt = system_prompt + example_prompt + main_prompt
@@ -176,21 +182,27 @@ def main(args: argparse.Namespace):
 
 	dataset = ISCAArchiveProcessedDataset(args.input_dataframe, series=series, years=years)
 	docs = dataset.df
-	abstracts = docs["abstract"]
+	text = docs["content"]
 
 	# Prepare some refinment based on https://maartengr.github.io/BERTopic/getting_started/best_practices/best_practices.html
 	embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 	vectorizer_model = CountVectorizer(stop_words="english", min_df=2, ngram_range=(1, 2))
-	hdbscan_model = HDBSCAN(
-		min_cluster_size=10,
-		metric="euclidean",
-		cluster_selection_method="eom",
-		prediction_data=True,
+
+	cluster_model = KMeans(n_clusters=50)
+	# cluster_model = HDBSCAN(
+	# 	min_cluster_size=5, # NOTE: hardcoded
+	# 	metric="euclidean",
+	# 	cluster_selection_method="eom",
+	# 	prediction_data=True,
+	# )
+	umap_model = UMAP(
+		n_neighbors=5, # NOTE: hardcoded
+		n_components=10, # NOTE: hardcoded
+		metric="cosine",
 	)
-	umap_model = UMAP(n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42)
 
 	# Generate Embeddings
-	embeddings = embedding_model.encode(abstracts, show_progress_bar=True)
+	embeddings = embedding_model.encode(text, show_progress_bar=True)
 
 	# Play with three types of representation
 	keybert_model = KeyBERTInspired()
@@ -211,7 +223,7 @@ def main(args: argparse.Namespace):
 	topic_model = BERTopic(
 		embedding_model=embedding_model,
 		umap_model=umap_model,
-		hdbscan_model=hdbscan_model,
+		hdbscan_model=cluster_model,
 		vectorizer_model=vectorizer_model,
 		representation_model=representation_model,
 		top_n_words=args.nb_words,
@@ -220,15 +232,15 @@ def main(args: argparse.Namespace):
 	)
 
 	# Train model
-	topics, probs = topic_model.fit_transform(abstracts, embeddings)
+	topics, probs = topic_model.fit_transform(text, embeddings)
+	# topics = topic_model.reduce_outliers(text, topics)
+	# topic_model.update_topics(text, topics=topics)
 	docs["topics"] = topics
 	docs["probs"] = probs
 
 	if args.use_llama is not None:
 		llama_labels = [label[0][0].split("\n")[0] for label in topic_model.get_topics(full=True)["Llama"].values()]
-		print(topic_model.get_topic(1, full=True))
 		topic_model.set_topic_labels(llama_labels)
-		print(topic_model.get_topic(1, full=True))
 		topic_model.get_topic(1, full=True)
 	else:
 		# TODO: check if this brings something intereting?
@@ -254,3 +266,9 @@ def main(args: argparse.Namespace):
 	)
 
 	docs.to_json(output_dir / "docs_with_topics.json", default_handler=str)
+
+	# Extract custom labels => enable manual editing
+	freq_df = topic_model.get_topic_freq()
+	freq_df["Custom Label"] = [topic_model.custom_labels_[row.Topic+topic_model._outliers] for _, row in freq_df.iterrows()]
+	freq_df.sort_values(by="Topic", inplace=True)
+	freq_df.to_csv(output_dir/"model/topic2label.tsv", sep="\t", index=False)
