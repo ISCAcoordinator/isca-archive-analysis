@@ -91,7 +91,7 @@ def main(args: argparse.Namespace):
 
 def create_wordcloud(df, stopwords, output_file, max_words=500):
 	# Generte the text
-	text = " ".join(df["abstract"].dropna()).lower()
+	text = " ".join(df["content"].dropna()).lower()
 	text = re.sub("[^a-z -]+", "", text)
 
 	# stemmer = PorterStemmer()
