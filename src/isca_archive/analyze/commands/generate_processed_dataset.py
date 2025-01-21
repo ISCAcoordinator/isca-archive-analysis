@@ -15,6 +15,9 @@ from isca_archive.analyze.common.dataset import ISCAArchiveProcessorDataset
 def add_subparsers(subparsers):
 	parser = subparsers.add_parser("generate_dataset", help="Generate the processed dataset")
 
+	# Add options
+	parser.add_argument("-f", "--full-text", action="store_true", help="Load full text (converted from PDF file, so it can be dirty) instead of abstract")
+
 	# Add arguments
 	parser.add_argument("isca_archive_root", help="Root directory of the ISCA archive")
 	parser.add_argument("conf_ids", help="File containing the list of conference IDs to analyse")
@@ -31,7 +34,7 @@ def main(args: argparse.Namespace):
 		list_conf = [conf.strip() for conf in f_conf.readlines()]
 
 	# Load dataset and prepare the documents for BERTopic
-	dataset = ISCAArchiveProcessorDataset(pathlib.Path(args.isca_archive_root), list_conf)
+	dataset = ISCAArchiveProcessorDataset(pathlib.Path(args.isca_archive_root), list_conf, load_full_text=args.full_text)
 	docs = []
 	with logging_redirect_tqdm():
 		for i in trange(len(dataset)):

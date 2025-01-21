@@ -94,7 +94,8 @@ class ISCAArchiveProcessorDataset(Dataset):
 		entry = paper_entry.copy()
 		paper_id = paper_entry["paper_id"]
 		conf_id = conf_info["id"]
-		entry["abstract"] = "\n".join(paper_entry["abstract"]).strip()
+		entry["content_type"] = "abstract"
+		entry["content"] = "\n".join(paper_entry["abstract"]).strip()
 		entry["serie"] = conf_info["series"]
 		entry["year"] = conf_info["year"]
 
@@ -102,31 +103,46 @@ class ISCAArchiveProcessorDataset(Dataset):
 		try:
 			pdf_file = self._get_pdf(conf_id, paper_id)
 			if self._load_full_text:
-				tmp = self._load_pdf_content(pdf_file)
+				# NOTE: PDF extraction process to be added later, now use hardcoded input!
+				# tmp = self._load_pdf_content(pdf_file)
+
+				full_text_conf_file = pathlib.Path("input_analysis/full_text")/f"{conf_id}.json"
+				tmp = None
+				if full_text_conf_file.exists():
+					with open(full_text_conf_file) as f_out:
+						content = json.load(f_out)
+						tmp = content[f"{paper_id}.pdf"]
+
 				if tmp is not None:
-					abstract = tmp
+					entry["content_type"] = "full_text"
+					entry["content"] = tmp
+
 			entry["pdf_path"] = pdf_file
 		except Exception as ex:
 			self._logger.warning(f'The submission ID "{paper_id}" doesn\'t seem valid (pdf extraction failure): {ex}')
 
-		references = []
-		try:
-			if pdf_file is not None:
-				references = self._extract_biblio_from_article(pdf_file)
-			entry["references"] = references
-		except Exception as ex:
-			self._logger.warning(
-				f'The submission "{paper_id}" doesn\'t seem valid (references extraction failure): {ex}'
-			)
+		if False:
+			references = []
+			try:
+				if pdf_file is not None:
+					references = self._extract_biblio_from_article(pdf_file)
+				entry["references"] = references
+			except Exception as ex:
+				self._logger.warning(
+					f'The submission "{paper_id}" doesn\'t seem valid (references extraction failure): {ex}'
+				)
 
-		is_area = None
-		try:
-			entry["is_area"] = self._get_area(conf_id, paper_entry)
-			self._logger.debug(f"==> The area for {paper_id} is {is_area}")
-		except Exception as ex:
-			self._logger.warning(
-				f'The submission "{paper_id}" doesn\'t any area assigned: {ex}'
-			)
+			is_area = None
+			try:
+				entry["is_area"] = self._get_area(conf_id, paper_entry)
+				self._logger.debug(f"==> The area for {paper_id} is {is_area}")
+			except Exception as ex:
+				self._logger.warning(
+					f'The submission "{paper_id}" doesn\'t have any area assigned: {ex}'
+				)
+
+		# Ignore the abstract entry (we are already using the content one)
+		del entry["abstract"]
 
 		return entry
 
@@ -134,7 +150,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 
 		# Prepare the paper id
 		paper_id = paper["original"]
-		if not paper_id.startswith("i"):
+		if re.match(r'^[0-9]', paper_id):
 			paper_id = f"{int(paper_id):04d}"
 
 		# NOTE: could be optimized to not load this everytime !
@@ -161,7 +177,6 @@ class ISCAArchiveProcessorDataset(Dataset):
 			resource_filename("isca_archive", 'resources/is_area_labels.tsv'),
 			sep="\t"
 		)
-
 
 		label = df_area_labels.loc[(df_area_labels.primary_id == area_id) & pd.isna(df_area_labels.secondary_id), "label"].item()
 		return label
