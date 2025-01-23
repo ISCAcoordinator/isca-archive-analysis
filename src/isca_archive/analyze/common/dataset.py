@@ -111,7 +111,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 				if full_text_conf_file.exists():
 					with open(full_text_conf_file) as f_out:
 						content = json.load(f_out)
-						tmp = content[f"{paper_id}.pdf"]
+						tmp = content[f"{paper_id}.pdf"]["text"]
 
 				if tmp is not None:
 					entry["content_type"] = "full_text"
