@@ -12,6 +12,7 @@ from isca_archive.analyze.commands import (
     topic_visualisation,
     word_cloud,
     zero_shot_topic,
+    topic_area
 )
 
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
@@ -93,6 +94,7 @@ def main():
     topic_visualisation.add_subparsers(subparsers)
     word_cloud.add_subparsers(subparsers)
     zero_shot_topic.add_subparsers(subparsers)
+    topic_area.add_subparsers(subparsers)
 
     # Parse arguments and run command
     args = parser.parse_args()

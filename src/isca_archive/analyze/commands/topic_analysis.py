@@ -235,7 +235,7 @@ def main(args: argparse.Namespace):
 	topics, probs = topic_model.fit_transform(text, embeddings)
 	# topics = topic_model.reduce_outliers(text, topics)
 	# topic_model.update_topics(text, topics=topics)
-	docs["topics"] = topics
+	docs["BERTopic"] = topics
 	docs["probs"] = probs
 
 	if args.use_llama is not None:
