@@ -12,6 +12,7 @@ from isca_archive.analyze.commands import (
     topic_visualisation,
     word_cloud,
     zero_shot_topic,
+    co_author_extraction,
     topic_area
 )
 
@@ -95,6 +96,7 @@ def main():
     word_cloud.add_subparsers(subparsers)
     zero_shot_topic.add_subparsers(subparsers)
     topic_area.add_subparsers(subparsers)
+    co_author_extraction.add_subparsers(subparsers)
 
     # Parse arguments and run command
     args = parser.parse_args()
