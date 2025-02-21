@@ -10,6 +10,7 @@ from bertopic.representation import KeyBERTInspired
 
 # Data
 import pandas as pd
+from pkg_resources import resource_filename
 
 # File / Dataset
 from isca_archive.analyze.common.dataset import ISCAArchiveProcessedDataset
@@ -62,9 +63,6 @@ def add_subparsers(subparsers):
 	parser.add_argument(
 		"input_dataframe", help="the ISCA Archive processed dataframe file"
 	)
-	parser.add_argument(
-		"area_dataframe", help="The dataframe file containg the IS areas"
-	)
 	parser.add_argument("output_dir", help="The output directory")
 
 	parser.set_defaults(func=main)
@@ -73,14 +71,19 @@ def add_subparsers(subparsers):
 def main(args: argparse.Namespace):
 
 	# Load candidate topics
-	df_topics = pd.read_csv(args.area_dataframe, sep="\t")
+
+
+	df_areas = pd.read_csv(
+		resource_filename("isca_archive", 'resources/is_area_labels.tsv'),
+		sep="\t"
+	)
 	if args.secondary_areas:
 		logger.info("Use the secondary areas")
-		df_topics = df_topics[~pd.isna(df_topics.Secondary)]
+		df_areas = df_areas[~pd.isna(df_areas.secondary_id)]
 	else:
 		logger.info("Use the primary areas")
-		df_topics = df_topics[pd.isna(df_topics.Secondary)]
-	candidate_topics = list(df_topics.Description)
+		df_areas = df_areas[pd.isna(df_areas.secondary_id)]
+	candidate_topics = list(df_areas.label)
 
 	# Load the dataset
 	years = args.year_subset
@@ -92,24 +95,22 @@ def main(args: argparse.Namespace):
 		args.input_dataframe, series=series, years=years
 	)
 	docs = dataset.df
-	abstracts = docs.reset_index()["abstract"]
+	text = docs.reset_index()["content"]
 
-	# # Create your representation model
-	# representation_model = ZeroShotClassification(candidate_topics, model="facebook/bart-large-mnli")
+	# Create your representation model
+	candidate_topics = candidate_topics[:-2] # FIXME: assume the last one is the "Special Session"
 
 	# Use the representation model in BERTopic on top of the default pipeline
 	topic_model = BERTopic(
 		embedding_model="thenlper/gte-small",
 		min_topic_size=15,
 		zeroshot_topic_list=candidate_topics,
-		zeroshot_min_similarity=0.85,
+		zeroshot_min_similarity=0.75,
 		representation_model=KeyBERTInspired()
 	)
-	topics, _ = topic_model.fit_transform(abstracts)
-	docs["topics"] = topics
-	_, probs = topic_model.transform(abstracts)
-	docs["probs"] = probs
-
+	topic_model.fit_transform(text)
+	topics, probs = topic_model.transform(text)
+	topic_model.probabilities_ = probs # NOTE: reinject the probabilities to visualisae the topic decomposition
 	topic_info = topic_model.get_topic_info()
 
 	##########################################################################################

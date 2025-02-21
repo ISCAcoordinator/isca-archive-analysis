@@ -1,5 +1,6 @@
 import pathlib
 import argparse
+import logging
 
 # BERTopic
 from bertopic import BERTopic
@@ -12,13 +13,41 @@ from sentence_transformers import SentenceTransformer
 from umap import UMAP
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
+from kmeans_pytorch import KMeans as PTKMeans
 
-
+import torch
+import numpy as np
 import pandas as pd
 
 # File / Dataset
+from isca_archive.analyze.common.stopwords import generate_stop_words
 from isca_archive.analyze.common.dataset import ISCAArchiveProcessedDataset
 from isca_archive.analyze.common.args import parse_range
+from isca_archive.analyze.common.llama_helpers import configure_llama
+
+
+def batchify(a, batch_size=512):
+	n = (len(a) // batch_size) + len(a) % batch_size
+	for i in np.array_split(a, n, axis=0):
+		yield i
+
+class BalancedKMeans(PTKMeans):
+	def __init__(self, n_clusters=None, cluster_centers=None, device=torch.device('cpu'), balanced:bool=False, tol:float=5e-2, iter_limit:int=1000):
+		super().__init__(n_clusters, cluster_centers, device, balanced)
+		self._tol = tol
+		self._iter_limit = iter_limit
+		self.labels_ = None
+
+	def fit(self, X, y=None):
+		self.labels_ = super().fit(torch.Tensor(X), iter_limit=self._iter_limit, tol=self._tol)
+		print(self.labels_.unique(return_counts=True))
+		# print(y.shape)
+		self.labels_ = self.labels_.numpy()
+		return self
+
+	# def transform(self, X: np.ndarray) -> np.ndarray:
+	# 	return X
+
 
 
 def add_subparsers(subparsers):
@@ -41,10 +70,10 @@ def add_subparsers(subparsers):
 
 	# Ignoring options
 	parser.add_argument(
-		"--ignore-research-keywords",
+		"--ignore-isca-stopwords",
 		default=False,
 		action="store_true",
-		help="Add the research papers/abstracts' keywords to the list of stop words"
+		help="Add the ISCA stop words to the list of stop words"
 	)
 	parser.add_argument(
 		"--ignore-data-keywords",
@@ -62,7 +91,7 @@ def add_subparsers(subparsers):
 	# Control
 	parser.add_argument(
 		"--nb-topics",
-		default=40,
+		default=14,
 		type=int,
 		help="The number of topics"
 	)
@@ -71,6 +100,18 @@ def add_subparsers(subparsers):
 		default=20,
 		type=int,
 		help="The number of top words per topic"
+	)
+	parser.add_argument(
+		"--clustering-algorithm",
+		default="kmeans",
+		type=str,
+		help="The clustering algorithm used (kmeans, hdbscan or kmeans_balanced)"
+	)
+	parser.add_argument(
+		"--seed",
+		default=42,
+		type=int,
+		help="The \"random\" seed for a better reproducibility (both set for UMAP and Balanced KMeans)"
 	)
 
 	# LLM support
@@ -88,91 +129,10 @@ def add_subparsers(subparsers):
 	parser.set_defaults(func=main)
 
 
-def configure_llama(token: str) -> BaseRepresentation:
-	# Some local imports
-	from bertopic.representation import TextGeneration
-	import huggingface_hub
-	import transformers
-	from torch import cuda
-	from torch import bfloat16
-
-	# Some local constants
-	MODEL_ID = 'meta-llama/Llama-2-7b-chat-hf'
-	# MODEL_ID = 'meta-llama/Meta-Llama-3-70B-Instruct'
-	# MODEL_ID = 'meta-llama/Llama-3.1-8B'
-	DEVICE = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
-
-	# Login to huggingface hub
-	huggingface_hub.login(token=token)
-
-	bnb_config = transformers.BitsAndBytesConfig(
-		load_in_4bit=True,  # 4-bit quantization
-		bnb_4bit_quant_type='nf4',  # Normalized float 4
-		bnb_4bit_use_double_quant=True,  # Second quantization after the first
-		bnb_4bit_compute_dtype=bfloat16  # Computation type
-	)
-
-
-	# Prepare Llama 2
-	tokenizer = transformers.AutoTokenizer.from_pretrained(MODEL_ID)
-	model = transformers.AutoModelForCausalLM.from_pretrained(
-		MODEL_ID,
-		trust_remote_code=True,
-		quantization_config=bnb_config,
-		device_map='auto',
-	)
-	model.eval()
-
-
-	# Our text generator
-	generator = transformers.pipeline(
-		model=model, tokenizer=tokenizer,
-		task='text-generation',
-		temperature=0.1,
-		max_new_tokens=500,
-		repetition_penalty=1.1
-	)
-
-	# System prompt describes information given to all conversations
-	system_prompt = """
-	<s>[INST] <<SYS>>
-	You are a helpful, respectful and honest expert in speech science and speech technology acting as an assistantfor labeling topics.
-	<</SYS>>
-	"""
-
-	# Example prompt demonstrating the output we are looking for
-	example_prompt = """
-	I have a topic that contains the following documents:
-	- Traditional diets in most cultures were primarily plant-based with a little meat on top, but with the rise of industrial style meat production and factory farming, meat has become a staple food.
-	- Meat, but especially beef, is the word food in terms of emissions.
-	- Eating meat doesn't make you a bad person, not eating meat doesn't make you a good one.
-
-	The topic is described by the following keywords: 'meat, beef, eat, eating, emissions, steak, food, health, processed, chicken'.
-
-	Based on the information about the topic above, please create a short label of this topic.
-	Make sure you to only return the label and nothing more.
-
-	[/INST] Environmental impacts of eating meat
-	"""
-
-	# Our main prompt with documents ([DOCUMENTS]) and keywords ([KEYWORDS]) tags
-	main_prompt = """
-	[INST]
-	I have a topic that contains the following documents:
-	[DOCUMENTS]
-
-	The topic is described by the following keywords: '[KEYWORDS]'.
-
-	Based on the information about the topic above, please create a short label of this topic.
-	Make sure you to only return the label and nothing more.
-	[/INST]
-	"""
-	prompt = system_prompt + example_prompt + main_prompt
-
-	return TextGeneration(generator, prompt=prompt)
-
 
 def main(args: argparse.Namespace):
+	np.random.seed(args.seed)
+
 	# Load the dataset
 	series = args.serie_subset
 	if series is not None:
@@ -184,21 +144,31 @@ def main(args: argparse.Namespace):
 	docs = dataset.df
 	text = docs["content"]
 
+	stop_words = generate_stop_words(args.ignore_isca_stopwords, args.ignore_data_keywords, args.ignore_ml_keywords)
+
 	# Prepare some refinment based on https://maartengr.github.io/BERTopic/getting_started/best_practices/best_practices.html
 	embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-	vectorizer_model = CountVectorizer(stop_words="english", min_df=2, ngram_range=(1, 2))
+	vectorizer_model = CountVectorizer(stop_words=list(stop_words), min_df=2, ngram_range=(1, 2))
 
-	cluster_model = KMeans(n_clusters=50)
-	# cluster_model = HDBSCAN(
-	# 	min_cluster_size=5, # NOTE: hardcoded
-	# 	metric="euclidean",
-	# 	cluster_selection_method="eom",
-	# 	prediction_data=True,
-	# )
+	if args.clustering_algorithm.lower() == "kmeans":
+		cluster_model = KMeans(n_clusters=args.nb_topics)
+	elif args.clustering_algorithm.lower() == "balanced_kmeans":
+		cluster_model = BalancedKMeans(n_clusters=args.nb_topics, device=torch.device('cuda:0'), balanced=True)
+	elif args.clustering_algorithm.lower() == "hdbscan":
+		cluster_model = HDBSCAN(
+			min_cluster_size=5, # NOTE: hardcoded
+			metric="euclidean",
+			cluster_selection_method="eom",
+			prediction_data=True,
+		)
+	else:
+		raise Exception("The clustering algorithm \"{args.clustering_algorithm}\" is not supported")
+
 	umap_model = UMAP(
 		n_neighbors=5, # NOTE: hardcoded
 		n_components=10, # NOTE: hardcoded
 		metric="cosine",
+		random_state=args.seed
 	)
 
 	# Generate Embeddings
@@ -220,6 +190,7 @@ def main(args: argparse.Namespace):
 	if args.use_llama is not None:
 		representation_model["Llama"] = configure_llama(args.use_llama)
 
+	handlers = logging.getLogger("root").handlers
 	topic_model = BERTopic(
 		embedding_model=embedding_model,
 		umap_model=umap_model,

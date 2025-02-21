@@ -30,8 +30,6 @@ def configure_logger(args) -> logging.Logger:
     --------
     the logger: logger.Logger
     """
-    # create logger and formatter
-    logger = logging.getLogger()
 
     # Verbose level => logging level
     log_level = args.verbosity
@@ -42,7 +40,7 @@ def configure_logger(args) -> logging.Logger:
     # Define the default logger configuration
     logging_config = dict(
         version=1,
-        disable_existing_logger=True,
+        disable_existing_logger=False,
         formatters={
             "f": {
                 "format": "[%(asctime)s] [%(levelname)s] — [%(name)s — %(funcName)s:%(lineno)d] %(message)s",
@@ -69,12 +67,11 @@ def configure_logger(args) -> logging.Logger:
         }
         logging_config["root"]["handlers"] = ["h", "f"]
 
-    # Setup logging configuration
-    dictConfig(logging_config)
+    # # Setup logging configuration
+    # dictConfig(logging_config)
 
 
 def main():
-
     parser = argparse.ArgumentParser(description="ISCA Archive maintaining helper")
 
     # Add some global options
@@ -101,7 +98,7 @@ def main():
     # Parse arguments and run command
     args = parser.parse_args()
 
-	# Now run
+    # Now run
     configure_logger(args)
     if args.subcommand:
         args.func(args)

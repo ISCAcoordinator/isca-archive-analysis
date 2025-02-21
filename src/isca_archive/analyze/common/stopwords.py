@@ -1,49 +1,11 @@
-from typing import Set
+from pkg_resources import resource_filename
 import nltk
 
 nltk.download("stopwords")
 
-research_stopwords = {
-	"abstract",
-	"article",
-	"author",
-	"authors",
-	"background",
-	"conclusion",
-	"data",
-	"discussion",
-	"experiment",
-	"figure",
-	"findings",
-	"hypothesis",
-	"introduction",
-	"keywords",
-	"method",
-	"methods",
-	"objective",
-	"objectives",
-	"paper",
-	"papers",
-	"problem",
-	"publication",
-	"published",
-	"purpose",
-	"question",
-	"references",
-	"related",
-	"result",
-	"results",
-	"studies",
-	"study",
-	"table",
-	"tables",
-	"theory",
-	"topic",
-	"use"
-	"used",
-	"uses",
-	"using",
-}
+
+with open(resource_filename("isca_archive", 'resources/ISCA_stop_words.txt'), 'r') as f:
+	isca_stop_words = {l.strip() for l in f.readlines()}
 
 
 # Stopwords related to data analysis
@@ -90,12 +52,12 @@ machine_learning_stopwords = {
 
 
 def generate_stop_words(
-	with_research: bool = False, with_data_analysis: bool = False, with_ml: bool = False
-) -> Set[str]:
+	with_isca: bool = False, with_data_analysis: bool = False, with_ml: bool = False
+) -> set[str]:
 	stopwords = set(nltk.corpus.stopwords.words("english"))
 
-	if with_research:
-		stopwords.update(research_stopwords)
+	if with_isca:
+		stopwords.update(isca_stop_words)
 
 	if with_data_analysis:
 		stopwords.update(data_analysis_stopwords)

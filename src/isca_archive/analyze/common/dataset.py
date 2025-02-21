@@ -22,7 +22,7 @@ class ISCAArchiveProcessorDataset(Dataset):
 	then be loaded by ISCAArchiveProcessedDataset.
 	"""
 
-	def __init__(self, root_dir: pathlib.Path, list_conference: list[str] | None = None, load_full_text: bool = False):
+	def __init__(self, root_dir: pathlib.Path, list_conference: list[str] | None = None, load_full_text: bool = False, use_isca_keywords: bool = False, use_title:bool=False):
 		"""Initialisation
 
 		Parameters
@@ -38,6 +38,15 @@ class ISCAArchiveProcessorDataset(Dataset):
 		self._list_conferences: list[str] | None = list_conference
 		self._list_entries: list[tuple[dict]] = list()
 		self._load_full_text: bool = load_full_text
+		self._use_isca_keywords: bool = use_isca_keywords
+		self._use_title: bool = use_title
+
+		self._keywords = dict()
+		if self._use_isca_keywords:
+			keywords_file = self._metadata_dir/"keywords.json"
+			with open(keywords_file) as f_keywords:
+				self._keywords = json.load(f_keywords)
+
 		self._fill_entries()
 
 	def _fill_entries(self):
@@ -102,10 +111,11 @@ class ISCAArchiveProcessorDataset(Dataset):
 		pdf_file = None
 		try:
 			pdf_file = self._get_pdf(conf_id, paper_id)
-			if self._load_full_text:
+			if self._load_full_text and not self._use_isca_keywords:
 				# NOTE: PDF extraction process to be added later, now use hardcoded input!
 				# tmp = self._load_pdf_content(pdf_file)
 
+			     # FIXME: this is pretty inefficient
 				full_text_conf_file = pathlib.Path("input_analysis/full_text")/f"{conf_id}.json"
 				tmp = None
 				if full_text_conf_file.exists():
@@ -116,6 +126,16 @@ class ISCAArchiveProcessorDataset(Dataset):
 				if tmp is not None:
 					entry["content_type"] = "full_text"
 					entry["content"] = tmp
+			elif self._use_isca_keywords:
+				if self._use_title:
+					entry["content_type"] = "title+"
+					entry["content"] = f"{entry['title']} "
+				else:
+					entry["content_type"] = ""
+					entry["content"] = ""
+
+				entry["content_type"] += "keywords"
+				entry["content"] += self._keywords[paper_id]
 
 			entry["pdf_path"] = pdf_file
 		except Exception as ex:
@@ -389,6 +409,10 @@ class ISCAArchiveProcessedDataset(Dataset):
 		if years is not None:
 			self.df = self.df[self.df.year.isin(years)]
 
+                #
+		self.df = self.df.loc[(self.df.author_area_id != "") & (self.df.author_area_id != "Show and Tell") & (~pd.isna(self.df.author_area_id))]
+		self.df.author_area_id = self.df.author_area_id.apply(lambda x: int(x))
+		self.df = self.df[((self.df.year > 2020) | (self.df.author_area_id < 13)) & (self.df.author_area_id < 14)]
 		# Ensure the index works out
 		self.df.reset_index(inplace=True, drop=True)
 

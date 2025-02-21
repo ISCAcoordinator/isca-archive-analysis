@@ -33,7 +33,7 @@ def add_subparsers(subparsers):
 	)
 
 	parser.add_argument(
-		"--ignore-research-keywords",
+		"--ignore-isca-stopwords",
 		default=False,
 		action="store_true",
 		help="Add the research papers/abstracts' keywords to the list of stop words",
@@ -60,7 +60,7 @@ def add_subparsers(subparsers):
 
 def main(args: argparse.Namespace):
 	# Deal with stopword
-	stopwords = generate_stop_words(args.ignore_research_keywords, args.ignore_data_keywords, args.ignore_ml_keywords)
+	stopwords = generate_stop_words(args.ignore_isca_stopwords, args.ignore_data_keywords, args.ignore_ml_keywords)
 
 	# Load the dataset
 	series = args.serie_subset
