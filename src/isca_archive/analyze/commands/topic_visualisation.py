@@ -15,10 +15,11 @@ from isca_archive.analyze.common.bertopic_visualisation import (
     visualize_barchart,
     visualize_hierarchy,
     visualize_topics_over_time,
-    visualize_document_datamap
+    visualize_document_datamap,
 )
 
 import plotly.io as pio
+
 pio.kaleido.scope.default_format = "svg"
 colors: list[str] = [
     "rgba(150, 20, 30, .7)",
@@ -63,7 +64,7 @@ def main(args: argparse.Namespace):
     # Generate Embeddings (FIXME: focus)
     docs = docs[~pd.isna(docs["author_area_id"])]
     embeddings = embedding_model.encode(docs["content"], show_progress_bar=True)
-    umap_model = UMAP(n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine",random_state=42).fit(embeddings)
+    umap_model = UMAP(n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42).fit(embeddings)
     reduced_embeddings = umap_model.embedding_
 
     # # Generate the figures
@@ -119,15 +120,16 @@ def main(args: argparse.Namespace):
             topic_column="topic" if args.inject_labels is None else "label",
             topic_association_df=pd.read_csv(args.inject_labels, sep="\t"),
             colors=colors,
-            show_legend=False
+            show_legend=False,
         )
         fig.write_html(figure_dir / "document_embeddings_by_cluster.html")
 
-        fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+        fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
         fig.update_layout(
             font=dict(
                 size=22,  # Set the font size here
-            ))
+            )
+        )
         fig.write_image(figure_dir / "document_embeddings_by_cluster.svg", engine="kaleido")
         fig.write_image(figure_dir / "document_embeddings_by_cluster.pdf", engine="kaleido")
 

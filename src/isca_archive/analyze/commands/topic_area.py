@@ -36,7 +36,7 @@ def main(args: argparse.Namespace):
         args.input_dataframe,
     )
     docs = dataset.df
-    docs = docs[(docs.year > 2020)] # NOTE: hardcoded
+    docs = docs[(docs.year > 2020)]  # NOTE: hardcoded
     docs = docs[["author_area_id", "author_area_label", "BERTopic", "title"]]
     # NOTE: nan/empty cell is weird, this should be fixed in the dataset file
     docs = docs[
@@ -46,7 +46,11 @@ def main(args: argparse.Namespace):
         & (docs.author_area_id != "Show and Tell")
     ]  # filter out documents without ISCA area
     docs.author_area_id = docs.author_area_id.apply(lambda x: int(x))
-    area_labels = docs[["author_area_id", "author_area_label"]].drop_duplicates().sort_values(by="author_area_id")["author_area_label"]
+    area_labels = (
+        docs[["author_area_id", "author_area_label"]]
+        .drop_duplicates()
+        .sort_values(by="author_area_id")["author_area_label"]
+    )
     docs = docs[["author_area_id", "BERTopic", "title"]]
 
     dist = docs.groupby(["author_area_id", "BERTopic"]).agg("count").reset_index()
@@ -72,12 +76,9 @@ def main(args: argparse.Namespace):
         yaxis_title="Author ISCA Topic",
     )
     fig.update_xaxes(
-        tickmode='linear',
+        tickmode="linear",
     )
     print(area_labels)
-    fig.update_yaxes(
-        tickmode='array',
-        tickvals=area_labels
-    )
-    fig.write_html(output_dir/"area_topics_heatmap.html")
-    fig.write_image(output_dir/"area_topics_heatmap.svg")
+    fig.update_yaxes(tickmode="array", tickvals=area_labels)
+    fig.write_html(output_dir / "area_topics_heatmap.html")
+    fig.write_image(output_dir / "area_topics_heatmap.svg")

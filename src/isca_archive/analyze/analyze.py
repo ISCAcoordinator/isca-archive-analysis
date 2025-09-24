@@ -13,10 +13,11 @@ from isca_archive.analyze.commands import (
     word_cloud,
     zero_shot_topic,
     co_author_extraction,
-    topic_area
+    topic_area,
 )
 
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
+
 
 def configure_logger(args) -> logging.Logger:
     """Setup the global logging configurations and instanciate a specific logger for the current script

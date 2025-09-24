@@ -9,10 +9,9 @@ from isca_archive.analyze.common.dataset import ISCAArchiveProcessedDataset
 from isca_archive.analyze.common.args import parse_range
 from isca_archive.analyze.common.author import gimme_max, generate_collaboration_dict, generate_collaboration_graph
 
+
 def add_subparsers(subparsers):
-    parser = subparsers.add_parser(
-        "generate_co_author_graph", help="Generate the co-author graph"
-    )
+    parser = subparsers.add_parser("generate_co_author_graph", help="Generate the co-author graph")
 
     # Subsetting options
     parser.add_argument(
@@ -28,7 +27,6 @@ def add_subparsers(subparsers):
         type=parse_range,
         help="Comma separated of the years to focus on",
     )
-
 
     # Add arguments
     parser.add_argument("input_dataframe", help="the ISCA Archive processed dataframe file")
@@ -93,9 +91,11 @@ def main(args: argparse.Namespace):
     # Analyze ISCA Areas
     nb_topics = np.max(list(dict_isca_topic.keys()))
     collab_isca_areas = np.zeros((nb_topics, nb_topics))
-    for i_area in range(1, nb_topics+1):
-        for j_area in range(0, i_area-1):
-            collab_isca_areas[i_area-1, j_area] = len(dict_isca_topic[i_area].intersection(dict_isca_topic[j_area+1])) / len(dict_isca_topic[i_area])
+    for i_area in range(1, nb_topics + 1):
+        for j_area in range(0, i_area - 1):
+            collab_isca_areas[i_area - 1, j_area] = len(
+                dict_isca_topic[i_area].intersection(dict_isca_topic[j_area + 1])
+            ) / len(dict_isca_topic[i_area])
 
     fig = px.imshow(
         collab_isca_areas,
@@ -103,15 +103,17 @@ def main(args: argparse.Namespace):
         text_auto=True,  # Automatically display values in cells
     )
     fig.update_layout(title="Number of collaborations normalised by number of publications (ISCA Area)")
-    fig.write_html(output_dir/"collaboration_area_heatmap.html")
-    fig.write_image(output_dir/"collaboration_area_heatmap.svg")
+    fig.write_html(output_dir / "collaboration_area_heatmap.html")
+    fig.write_image(output_dir / "collaboration_area_heatmap.svg")
 
     # Analyse BERTopic
     nb_topics = np.max(list(dict_bert_topic.keys()))
     collab_bert_areas = np.zeros((nb_topics, nb_topics))
-    for i_area in range(1, nb_topics+1):
-        for j_area in range(0, i_area-1):
-            collab_bert_areas[i_area-1, j_area] = len(dict_bert_topic[i_area].intersection(dict_bert_topic[j_area+1])) / len(dict_bert_topic[i_area])
+    for i_area in range(1, nb_topics + 1):
+        for j_area in range(0, i_area - 1):
+            collab_bert_areas[i_area - 1, j_area] = len(
+                dict_bert_topic[i_area].intersection(dict_bert_topic[j_area + 1])
+            ) / len(dict_bert_topic[i_area])
 
     fig = px.imshow(
         collab_bert_areas,
@@ -119,5 +121,5 @@ def main(args: argparse.Namespace):
         text_auto=True,  # Automatically display values in cells
     )
     fig.update_layout(title="Number of collaborations normalised by number of publications (BERTopic)")
-    fig.write_html(output_dir/"collaboration_bert_heatmap.html")
-    fig.write_image(output_dir/"collaboration_bert_heatmap.svg")
+    fig.write_html(output_dir / "collaboration_bert_heatmap.html")
+    fig.write_image(output_dir / "collaboration_bert_heatmap.svg")

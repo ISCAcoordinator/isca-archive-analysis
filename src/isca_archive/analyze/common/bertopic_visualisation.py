@@ -45,14 +45,10 @@ DEFAULT_COLORS = [
     "#661100",  # Dark Brown
     "#6699CC",  # Muted Blue
     "#DDDDDD",  # Light Gray
-    "#E17C05"   # Orange
-]
-colors_4 = [
-    "#117733",  # Dark Green
-    "#332288",  # Dark Blue
     "#E17C05",  # Orange
-    "#CC6677"   # Rose
 ]
+colors_4 = ["#117733", "#332288", "#E17C05", "#CC6677"]  # Dark Green  # Dark Blue  # Orange  # Rose
+
 
 def visualize_hierarchical_documents(
     topic_model,
@@ -191,7 +187,9 @@ def visualize_hierarchical_documents(
 
     # Reduce input embeddings
     if reduced_embeddings is None:
-        umap_model = UMAP(n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine",random_state=42).fit(embeddings_to_reduce)
+        umap_model = UMAP(n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42).fit(
+            embeddings_to_reduce
+        )
         embeddings_2d = umap_model.embedding_
     elif sample is not None and reduced_embeddings is not None:
         embeddings_2d = reduced_embeddings[indices]
@@ -294,7 +292,11 @@ def visualize_hierarchical_documents(
                     mode="markers+text",
                     name="other",
                     hoverinfo="text",
-                    hovertext=df.loc[(df[f"level_{level+1}"] == -1), "doc"].str.wrap(40).replace("\n", "<br>") if not hide_document_hover else None,
+                    hovertext=(
+                        df.loc[(df[f"level_{level+1}"] == -1), "doc"].str.wrap(40).replace("\n", "<br>")
+                        if not hide_document_hover
+                        else None
+                    ),
                     showlegend=False,
                     marker=dict(color="#CFD8DC", size=5, opacity=0.5),
                 )
@@ -619,7 +621,9 @@ def visualize_document_datamap(
 
     # Reduce input embeddings
     if reduced_embeddings is None:
-        umap_model = UMAP(n_neighbors=15, n_components=2, min_dist=0.15, metric="cosine",random_state=42).fit(embeddings_to_reduce)
+        umap_model = UMAP(n_neighbors=15, n_components=2, min_dist=0.15, metric="cosine", random_state=42).fit(
+            embeddings_to_reduce
+        )
         embeddings_2d = umap_model.embedding_
     else:
         embeddings_2d = reduced_embeddings
@@ -675,7 +679,7 @@ def visualize_topics(
     width: int = 650,
     height: int = 650,
     colors: list[str] = DEFAULT_COLORS,
-    with_slider: bool = False
+    with_slider: bool = False,
 ) -> go.Figure:
     """Visualize topics, their sizes, and their corresponding words.
 
@@ -763,7 +767,15 @@ def visualize_topics(
     return _plotly_topic_visualization(df, topic_list, title, width, height, colors, with_slider=with_slider)
 
 
-def _plotly_topic_visualization(df: pd.DataFrame, topic_list: List[str], title: str, width: int, height: int, colors: list[str], with_slider: bool=False):
+def _plotly_topic_visualization(
+    df: pd.DataFrame,
+    topic_list: List[str],
+    title: str,
+    width: int,
+    height: int,
+    colors: list[str],
+    with_slider: bool = False,
+):
     """Create plotly-based visualization of topics with a slider for topic selection."""
 
     # Prepare figure range
@@ -788,7 +800,7 @@ def _plotly_topic_visualization(df: pd.DataFrame, topic_list: List[str], title: 
     #     colorscale=colors,
     #     hover_data={"Topic": True, "Words": True, "Size": True, "x": False, "y": False},
     # ))
-    df.Topic = df.Topic.apply(lambda x: str(int(x)+1))
+    df.Topic = df.Topic.apply(lambda x: str(int(x) + 1))
     print(df)
     fig = px.scatter(
         df,
@@ -826,27 +838,28 @@ def _plotly_topic_visualization(df: pd.DataFrame, topic_list: List[str], title: 
             x=0.9,
             y=1,
             traceorder="reversed",
-            font=dict(
-                color="black",
-                weight="bold"
-            ),
+            font=dict(color="black", weight="bold"),
             bordercolor="Black",
             borderwidth=2,
-        )
+        ),
     )
 
     # Create a slider for topic selection
     if with_slider:
         fig.update_traces(marker=dict(color="#B0BEC5", line=dict(width=2, color="DarkSlateGrey")))
+
         def get_color(topic_selected):
             if topic_selected == -1:
                 marker_color = ["#B0BEC5" for _ in topic_list]
             else:
                 marker_color = ["red" if topic == topic_selected else "#B0BEC5" for topic in topic_list]
             return [{"marker.color": [marker_color]}]
+
         steps = [dict(label=f"Topic {topic}", method="update", args=get_color(topic)) for topic in topic_list]
         sliders = [dict(active=0, pad={"t": 50}, steps=steps)]
-        fig.update_layout(sliders=sliders,)
+        fig.update_layout(
+            sliders=sliders,
+        )
 
     # Update axes ranges
     # fig['layout']['xaxis'].update(autorange = True)
@@ -872,7 +885,6 @@ def _plotly_topic_visualization(df: pd.DataFrame, topic_list: List[str], title: 
         line=dict(color="#9E9E9E", width=2),
     )
 
-
     # fig.add_annotation(x=x_range[0], y=sum() / 2, text="D1", showarrow=False, yshift=10)
 
     fig.add_annotation(x=x_range[0], y=sum(y_range) / 2, text="D1", showarrow=False, yshift=10)
@@ -895,10 +907,10 @@ def visualize_documents(
     width: int = 750,
     height: int = 750,
     colors: list[str] = DEFAULT_COLORS,
-    use_index: bool=True,
-    show_legend: bool=True,
+    use_index: bool = True,
+    show_legend: bool = True,
     topic_column: str = "topic",
-    topic_association_df: pd.DataFrame|None=None
+    topic_association_df: pd.DataFrame | None = None,
 ) -> Figure:
     """Visualize documents and their topics in 2D.
 
@@ -987,7 +999,7 @@ def visualize_documents(
     df["topic"] = [topic_per_doc[index] for index in indices]
 
     if topic_association_df is not None:
-        topic_association_df["topic"] = topic_association_df["topic"] - 1 # FIXME: this is hardcoded for now
+        topic_association_df["topic"] = topic_association_df["topic"] - 1  # FIXME: this is hardcoded for now
         df = df.merge(topic_association_df[["topic", topic_column]], on="topic")
 
     # Extract embeddings if not already done
@@ -1004,7 +1016,9 @@ def visualize_documents(
 
     # Reduce input embeddings
     if reduced_embeddings is None:
-        umap_model = UMAP(n_neighbors=10, n_components=6, min_dist=0.0, metric="cosine",random_state=42).fit(embeddings_to_reduce)
+        umap_model = UMAP(n_neighbors=10, n_components=6, min_dist=0.0, metric="cosine", random_state=42).fit(
+            embeddings_to_reduce
+        )
         embeddings_2d = umap_model.embedding_
     elif sample is not None and reduced_embeddings is not None:
         embeddings_2d = reduced_embeddings[indices]
@@ -1037,7 +1051,7 @@ def visualize_documents(
     fig = go.Figure()
 
     # Outliers and non-selected topics
-    non_selected_topics = set(unique_topics) # .difference(topics)
+    non_selected_topics = set(unique_topics)  # .difference(topics)
     # if len(non_selected_topics) == 0:
     #     non_selected_topics = [-1]
 
@@ -1091,7 +1105,7 @@ def visualize_documents(
                     textfont=dict(
                         size=12,
                     ),
-                    marker=dict(size=5, opacity=0.5, color=colors[topic%len(colors)]),
+                    marker=dict(size=5, opacity=0.5, color=colors[topic % len(colors)]),
                 )
             )
 
@@ -1131,9 +1145,7 @@ def visualize_documents(
     )
 
     if not show_legend:
-        fig.update_layout(
-            showlegend=False
-        )
+        fig.update_layout(showlegend=False)
 
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)
@@ -1595,7 +1607,7 @@ def visualize_topics_over_time(
     height: int = 450,
     colors: list[str] = DEFAULT_COLORS,
     use_index: bool = True,
-    use_scatter: bool = True
+    use_scatter: bool = True,
 ) -> go.Figure:
     """Visualize topics over time.
 
@@ -1694,6 +1706,6 @@ def visualize_topics_over_time(
         hoverlabel=dict(bgcolor="white", font_size=16, font_family="Rockwell"),
         legend=dict(
             title="Topics",
-        )
+        ),
     )
     return fig
