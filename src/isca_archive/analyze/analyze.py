@@ -72,9 +72,10 @@ def configure_logger(args) -> logging.Logger:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ISCA Archive maintaining helper")
+    parser = argparse.ArgumentParser(description="ISCA Archive analysis tool")
 
     # Add some global options
+    parser.add_argument("-c", "--config", type=str, required=True, help="The overall configuration file")
     parser.add_argument("-l", "--log_file", default=None, help="Logger file")
     parser.add_argument(
         "-v",
