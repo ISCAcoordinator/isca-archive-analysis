@@ -1,0 +1,74 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61",
+]
+
+[project]
+name = "isca-archive-analysis"
+version = "2024"
+description='Toolkits to conduct a set of analysis on the ISCA archive metadata'
+readme = {file="README.md", content-type = "text/markdown"}
+authors = [
+  {name="Martin Cooke", email="m.cooke@ikerbasque.org"},
+  {name="Sébastien Le Maguer", email="sebastien.lemaguer@helsinki.fi"}
+]
+requires-python = ">=3.11"
+classifiers = [
+  'Development Status :: 4 - Beta',
+  'Intended Audience :: End Users/Desktop',
+  'License :: OSI Approved :: MIT License',
+  'Programming Language :: Python :: 3',
+]
+dependencies = [
+  "torch==2.4.0",
+  "bertopic[spacy]==0.16.3",
+  "wordcloud==1.9.3",
+  "lxml==5.3.0",
+  "bibtexparser==1.4.1"
+  'PyMuPDF==1.24.1',
+  'bs4==0.0.1',
+  'chardet==5.2.0',
+  'frontend==0.0.3',
+  'jinja2==3.1.2',
+  'loguru==0.7.2',
+  'nltk==3.8.1',
+  'pandas==2.0.3',
+  'requests==2.31.0',
+  'scikit-learn==1.4.0'
+]
+
+[project.optional-dependencies]
+dev = [
+  "pre-commit",
+  "black"
+]
+
+[project.urls]
+Homepage = "https://github.com/ISCACoordinator/isca-archive-analysis"
+Issues = "https://github.com/ISCACoordinator/isca-archive-analysis/issues"
+git = "https://github.com/ISCACoordinator/isca-archive-analysis.git"
+
+[project.scripts]
+archive_analysis="isca_archive.analyze.analyze:main"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.toml
+  |\.sh
+  |\.git
+  |\.ini
+  |Dockerfile
+  |Jenkinfile
+)/
+'''
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
