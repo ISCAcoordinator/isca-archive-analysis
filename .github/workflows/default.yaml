@@ -1,4 +1,4 @@
-name: check-isca-archive
+name: test analysis
 run-name: ${{ github.actor }} is in validation
 
 on:
