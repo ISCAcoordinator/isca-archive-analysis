@@ -1,0 +1,33 @@
+name: check-isca-archive
+run-name: ${{ github.actor }} is in validation
+
+on:
+  push:
+    paths:
+      - src/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.12' ]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Setup python
+      - name: Setup python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      # Install everything
+      - name: Install the toolkit
+        run: pip install -e .
+
+      # TODO: it is a bit global for now, it would be good to simply go
+      - name: Validate the metadata
+        run: |
+          bash -xe run_analysis.sh

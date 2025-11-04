@@ -1,0 +1,17 @@
+# Undecided input
+input_analysis/areas_xls/
+input_analysis/full_text/
+input_analysis/clean_ref.py
+input_analysis/references.csv
+input_analysis/test_ref.tsv
+
+# To be sorted and cleaned
+to_sort*/
+
+# Generated
+__pycache__/
+*.egg-info/
+runs/
+
+# Sensitive
+config.ini
