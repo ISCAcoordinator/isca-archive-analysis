@@ -1,0 +1,3 @@
+[submodule "published"]
+	path = published
+	url = git@github.com:ISCAcoordinator/isca-archive-metadata.git
