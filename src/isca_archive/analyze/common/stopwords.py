@@ -1,11 +1,10 @@
-from pkg_resources import resource_filename
+import importlib.resources
 import nltk
 
 nltk.download("stopwords")
 
 
-with open(resource_filename("isca_archive", "resources/ISCA_stop_words.txt"), "r") as f:
-    isca_stop_words = {l.strip() for l in f.readlines()}
+isca_stop_words = [l.strip for l in importlib.resources.read_text("isca_archive.resources", 'ISCA_stop_words.txt').split("\\n")]
 
 
 # Stopwords related to data analysis

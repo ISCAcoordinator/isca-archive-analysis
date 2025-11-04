@@ -70,45 +70,46 @@ def main(args: argparse.Namespace):
     # # Generate the figures
     figure_dir = pathlib.Path(args.output_dir)
     figure_dir.mkdir(parents=True, exist_ok=True)
-    # fig = visualize_barchart(topic_model, custom_labels=args.custom_labels, width=500, top_n_topics=-1, n_words=-1)
-    # fig.write_html(figure_dir / "topics_decomposition.html")
+    fig = visualize_barchart(topic_model, custom_labels=args.custom_labels, width=500, top_n_topics=-1, n_words=-1)
+    fig.write_html(figure_dir / "topics_decomposition.html")
 
-    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    # fig.write_image(figure_dir / "topics_decomposition.svg", engine="kaleido")
-    # fig.write_image(figure_dir / "topics_decomposition.pdf", engine="kaleido")
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.write_image(figure_dir / "topics_decomposition.svg", engine="kaleido")
+    fig.write_image(figure_dir / "topics_decomposition.pdf", engine="kaleido")
 
-    # fig = visualize_topics(topic_model, custom_labels=args.custom_labels, width=600, height=600)
-    # fig.write_html(figure_dir / "topics_map.html", include_plotlyjs=True)
-    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig = visualize_topics(topic_model, custom_labels=args.custom_labels, width=600, height=600)
+    fig.write_html(figure_dir / "topics_map.html", include_plotlyjs=True)
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-    # fig.update_layout(
-    #     font=dict(
-    #         size=22,  # Set the font size here
-    #     ))
-    # fig.write_image(figure_dir / "topics_map.svg", engine="kaleido")
-    # fig.write_image(figure_dir / "topics_map.pdf", engine="kaleido")
+    fig.update_layout(
+        font=dict(
+            size=22,  # Set the font size here
+        ))
+    fig.write_image(figure_dir / "topics_map.svg", engine="kaleido")
+    fig.write_image(figure_dir / "topics_map.pdf", engine="kaleido")
 
-    # fig = topic_model.visualize_heatmap(custom_labels=args.custom_labels, n_clusters=4)
-    # fig.write_html(figure_dir / "topics_similarity_heatmap.html", include_plotlyjs=True)
-    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    # fig.write_image(figure_dir / "topics_similarity_heatmap.svg", engine="kaleido")
-    # fig.write_image(figure_dir / "topics_similarity_heatmap.pdf", engine="kaleido")
+    fig = topic_model.visualize_heatmap(custom_labels=args.custom_labels, n_clusters=4)
+    fig.write_html(figure_dir / "topics_similarity_heatmap.html", include_plotlyjs=True)
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.write_image(figure_dir / "topics_similarity_heatmap.svg", engine="kaleido")
+    fig.write_image(figure_dir / "topics_similarity_heatmap.pdf", engine="kaleido")
 
-    # fig = visualize_documents(
-    #     topic_model,
-    #     docs["content"],
-    #     embeddings=embeddings,
-    #     reduced_embeddings=reduced_embeddings,
-    #     hide_document_hover=False,
-    #     hide_annotations=False,
-    #     custom_labels=args.custom_labels,
-    # )
-    # fig.write_html(figure_dir / "document_embeddings.html")
-    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    # fig.write_image(figure_dir / "document_embeddings.svg", engine="kaleido")
-    # fig.write_image(figure_dir / "document_embeddings.pdf", engine="kaleido")
+    fig = visualize_documents(
+        topic_model,
+        docs["content"],
+        embeddings=embeddings,
+        reduced_embeddings=reduced_embeddings,
+        hide_document_hover=False,
+        hide_annotations=False,
+        custom_labels=args.custom_labels,
+    )
+    fig.write_html(figure_dir / "document_embeddings.html")
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.write_image(figure_dir / "document_embeddings.svg", engine="kaleido")
+    fig.write_image(figure_dir / "document_embeddings.pdf", engine="kaleido")
 
     if args.inject_labels is not None:
+        labels_df = pd.read_csv(args.inject_labels, sep="\t")
         fig = visualize_documents(
             topic_model,
             docs["content"],
@@ -118,7 +119,7 @@ def main(args: argparse.Namespace):
             hide_annotations=False,
             custom_labels=args.custom_labels,
             topic_column="topic" if args.inject_labels is None else "label",
-            topic_association_df=pd.read_csv(args.inject_labels, sep="\t"),
+            topic_association_df=labels_df,
             colors=colors,
             show_legend=False,
         )
@@ -133,6 +134,7 @@ def main(args: argparse.Namespace):
         fig.write_image(figure_dir / "document_embeddings_by_cluster.svg", engine="kaleido")
         fig.write_image(figure_dir / "document_embeddings_by_cluster.pdf", engine="kaleido")
 
+    # # FIXME: currently this won't work as there is a dimension problem
     # df_area = docs[["BERTopic", "author_area_id"]].rename(columns={"BERTopic": "topic"}).drop_duplicates()
     # fig = visualize_documents(
     #     topic_model,
@@ -150,23 +152,24 @@ def main(args: argparse.Namespace):
     # fig.write_image(figure_dir / "document_embeddings_by_isca_area.svg", engine="kaleido")
     # fig.write_image(figure_dir / "document_embeddings_by_isca_area.pdf", engine="kaleido")
 
-    # # with the reduced embeddings
-    # fig = visualize_document_datamap(
-    #     topic_model,
-    #     docs["content"],
-    #     embeddings=embeddings,
-    #     label_wrap_width=12,
-    #     label_over_points=True,
-    #     dynamic_label_size=True,
-    #     max_font_size=36,
-    #     min_font_size=4,
-    #     min_font_weight=100,
-    #     max_font_weight=1000,
-    #     font_family="Roboto Condensed",
-    # )
-    # fig.savefig(figure_dir / "document_data_map.svg", bbox_inches="tight")
-    # fig.savefig(figure_dir / "document_data_map.pdf", bbox_inches="tight")
+    # with the reduced embeddings
+    fig = visualize_document_datamap(
+        topic_model,
+        docs["content"],
+        embeddings=embeddings,
+        label_wrap_width=12,
+        label_over_points=True,
+        dynamic_label_size=True,
+        max_font_size=36,
+        min_font_size=4,
+        min_font_weight=100,
+        max_font_weight=1000,
+        font_family="Roboto Condensed",
+    )
+    fig.savefig(figure_dir / "document_data_map.svg", bbox_inches="tight")
+    fig.savefig(figure_dir / "document_data_map.pdf", bbox_inches="tight")
 
+    # FIXME: currently this is not working (sklearn.exceptions.NotFittedError: Vocabulary not fitted or provided)
     # # Distribution
     # topic_distr, _ = topic_model.approximate_distribution(docs["content"])
     # fig = topic_model.visualize_distribution(topic_distr[1], custom_labels=args.custom_labels)
@@ -175,16 +178,18 @@ def main(args: argparse.Namespace):
     # fig.write_image(figure_dir / "distribution_topics.svg", engine="kaleido")
     # fig.write_image(figure_dir / "distribution_topics.pdf", engine="kaleido")
 
+
+    # # FIXME: currently this is not working (sklearn.exceptions.NotFittedError: Vocabulary not fitted or provided
     # # Hierarchical topic visualisation
     # hierarchical_topics = topic_model.hierarchical_topics(docs["content"], False,)
     # hierarchical_topics.to_csv(figure_dir/"hierarchical_topics.tsv", sep="\t")
     # fig = visualize_hierarchy(topic_model, hierarchical_topics=hierarchical_topics, custom_labels=args.custom_labels)
     # fig.write_html(figure_dir / "hierarchical_topics.html")
-
     # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     # fig.write_image(figure_dir / "hierarchical_topics.svg", engine="kaleido")
     # fig.write_image(figure_dir / "hierarchical_topics.pdf", engine="kaleido")
 
+    # # FIXME: Currently this is not working (sklearn.utils._param_validation.InvalidParameterError: The 'X' parameter of normalize must be an array-like or a sparse matrix. Got None instead.)
     # # Evolution over time
     # timestamps = docs.year
     # topics_over_time = topic_model.topics_over_time(docs["content"], timestamps)
@@ -192,15 +197,13 @@ def main(args: argparse.Namespace):
     #     topic_model, topics_over_time, custom_labels=args.custom_labels, normalize_frequency=True
     # )
     # fig.write_html(figure_dir / "topics_over_time.html")
-
     # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     # fig.write_image(figure_dir / "topics_over_time.svg", engine="kaleido")
     # fig.write_image(figure_dir / "topics_over_time.pdf", engine="kaleido")
 
-    # # Evolution over time
-    # fig = topic_model.visualize_term_rank(log_scale=True, custom_labels=args.custom_labels)
-    # fig.write_html(figure_dir / "terms_rank_across_topics.html")
-
-    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    # fig.write_image(figure_dir / "terms_rank_across_topics.svg", engine="kaleido")
-    # fig.write_image(figure_dir / "terms_rank_across_topics.pdf", engine="kaleido")
+    # Evolution over time
+    fig = topic_model.visualize_term_rank(log_scale=True, custom_labels=args.custom_labels)
+    fig.write_html(figure_dir / "terms_rank_across_topics.html")
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.write_image(figure_dir / "terms_rank_across_topics.svg", engine="kaleido")
+    fig.write_image(figure_dir / "terms_rank_across_topics.pdf", engine="kaleido")

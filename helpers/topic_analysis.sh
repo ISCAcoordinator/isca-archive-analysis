@@ -9,7 +9,7 @@
 : ${GEN_DATASET:=TRUE}
 : ${WORD_CLOUD:=FALSE}
 : ${DEFAULT_TOPIC:=TRUE}
-: ${ZERO_SHOT_PRIMARY:=FALSE}
+: ${ZERO_SHOT_PRIMARY:=TRUE}
 : ${ZERO_SHOT_SECONDARY:=FALSE}
 
 # Directory/files helpers
@@ -58,48 +58,48 @@ TOPICS_ARGS=(--nb-topics ${NB_TOPICS} --clustering-algorithm $CLUSTERING_ALGORIT
 [ "$USE_TITLE" = "TRUE" ]                             && EXTRACT_ARGS+=(--use-title)
 [ "$VERBOSE_LEVEL" = "INFO" ]                         && LOG_ARGS=(-v)
 [ "$VERBOSE_LEVEL" = "DEBUG" ]                        && LOG_ARGS=(-vv)
-[ "${TOPIC_CLUSTER}" != "" ]                          && VISUALIZE_ARGS+=(-i "${TOPIC_CLUSTER}")
+
+# FIXME: this creates some issues for what ever reason
+# [ "${TOPIC_CLUSTER}" != "" ]                          && VISUALIZE_ARGS+=(-i "${TOPIC_CLUSTER}")
 
 ##################################################################################
 ## actual process
 ##################################################################################
 
-# # # Generate dataframe
-# mkdir -p $ROOT_OUTPUT/logs
-# if [[ "${GEN_DATASET}" == "TRUE" ]]; then
-#     isca_archive_analyze $LOG_ARGS -l $ROOT_OUTPUT/logs/dataset.log generate_dataset ${EXTRACT_ARGS[@]} $ARCHIVE_DIR $INPUT_ANALYSIS_DIR/lists/all_conf.txt $ROOT_OUTPUT/isca_df.json
-# fi
+# Generate dataframe
+mkdir -p $ROOT_OUTPUT/logs
+if [[ "${GEN_DATASET}" == "TRUE" ]]; then
+    archive_analysis $LOG_ARGS -l $ROOT_OUTPUT/logs/dataset.log generate_dataset ${EXTRACT_ARGS[@]} $ARCHIVE_DIR $INPUT_ANALYSIS_DIR/lists/all_conf.txt $ROOT_OUTPUT/isca_df.json
+fi
 
-# # Simple Word Cloud
-# if [[ "${WORD_CLOUD}" == "TRUE" ]]; then
-#     time isca_archive_analyze $LOG_ARGS -l $ROOT_OUTPUT/logs/word_cloud.log generate_word_cloud ${ARGS[@]} $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/word_cloud
-# fi
+# Simple Word Cloud
+if [[ "${WORD_CLOUD}" == "TRUE" ]]; then
+    time archive_analysis $LOG_ARGS -l $ROOT_OUTPUT/logs/word_cloud.log generate_word_cloud ${ARGS[@]} $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/word_cloud
+fi
 
 # Overall
 if [[ "${DEFAULT_TOPIC}" == "TRUE" ]]; then
+    if [[ "${ONLY_VISUALISE}" != "TRUE" ]]; then
+        time archive_analysis $LOG_ARGS -l $ROOT_OUTPUT/logs/topic_analysis.log analyze_topics ${ARGS[@]} ${TOPICS_ARGS[@]} $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/unconstrained
+    fi
 
-    # if [[ "${ONLY_VISUALISE}" != "TRUE" ]]; then
-    #     time isca_archive_analyze $LOG_ARGS -l $ROOT_OUTPUT/logs/topic_analysis.log analyze_topics ${ARGS[@]} ${TOPICS_ARGS[@]} $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/unconstrained
-    # fi
-
-
-    isca_archive_analyze visualize_topics ${VISUALIZE_ARGS[@]} $ROOT_OUTPUT/unconstrained/docs_with_topics.json $ROOT_OUTPUT/unconstrained/model $ROOT_OUTPUT/unconstrained/figures
+    archive_analysis visualize_topics ${VISUALIZE_ARGS[@]} $ROOT_OUTPUT/unconstrained/docs_with_topics.json $ROOT_OUTPUT/unconstrained/model $ROOT_OUTPUT/unconstrained/figures
 fi
 
-# # Zero-Shot (Primary Area - FIXME - not yet working)
-# if [[ "${ZERO_SHOT_PRIMARY}" == "TRUE" ]]; then
-#     if [[ "${ONLY_VISUALISE}" != "TRUE" ]]; then
-#         time isca_archive_analyze $LOG_ARGS -l $ROOT_OUTPUT/logs/primary_area.log zero_shot_topic ${ARGS[@]} $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/imposed/primary
-#     fi
+# Zero-Shot (Primary Area - FIXME - not yet working)
+if [[ "${ZERO_SHOT_PRIMARY}" == "TRUE" ]]; then
+    if [[ "${ONLY_VISUALISE}" != "TRUE" ]]; then
+        time archive_analysis $LOG_ARGS -l $ROOT_OUTPUT/logs/primary_area.log zero_shot_topic ${ARGS[@]} $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/imposed/primary
+    fi
 
-#     isca_archive_analyze visualize_topics $ROOT_OUTPUT/imposed/primary/docs_with_topics.json $ROOT_OUTPUT/imposed/primary/model $ROOT_OUTPUT/imposed/primary/figures
-# fi
+    archive_analysis visualize_topics $ROOT_OUTPUT/imposed/primary/docs_with_topics.json $ROOT_OUTPUT/imposed/primary/model $ROOT_OUTPUT/imposed/primary/figures
+fi
 
-# # Zero-Shot (Secondary Area - FIXME - not yet working)
-# if [[ "${ZERO_SHOT_SECONDARY}" == "TRUE" ]]; then
-#     if [[ "${ONLY_VISUALISE}" != "TRUE" ]]; then
-#         time isca_archive_analyze $LOG_ARGS -l $ROOT_OUTPUT/logs/secondary_area.log zero_shot_topic ${ARGS[@]} -S $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/imposed/secondary
-#     fi
+# Zero-Shot (Secondary Area - FIXME - not yet working)
+if [[ "${ZERO_SHOT_SECONDARY}" == "TRUE" ]]; then
+    if [[ "${ONLY_VISUALISE}" != "TRUE" ]]; then
+        time archive_analysis $LOG_ARGS -l $ROOT_OUTPUT/logs/secondary_area.log zero_shot_topic ${ARGS[@]} -S $ROOT_OUTPUT/isca_df.json $ROOT_OUTPUT/imposed/secondary
+    fi
 
-#     isca_archive_analyze visualize_topics $ROOT_OUTPUT/imposed/secondary/docs_with_topics.json $ROOT_OUTPUT/imposed/secondary/model $ROOT_OUTPUT/imposed/secondary/figures
-# fi
+    archive_analysis visualize_topics $ROOT_OUTPUT/imposed/secondary/docs_with_topics.json $ROOT_OUTPUT/imposed/secondary/model $ROOT_OUTPUT/imposed/secondary/figures
+fi

@@ -1,0 +1,161 @@
+primary_id	secondary_id	label
+01		Speech Perception, Production, and Acquisition by Human Listeners
+01	01	Models of speech production
+01	02	Physiology and neurophysiology of speech production and perception
+01	03	Models of speech perception
+01	04	Acoustic and articulatory cues in speech perception
+01	05	Interaction speech production-speech perception
+01	06	Multimodal speech perception
+01	07	Cognition and brain studies on speech
+01	08	Code switching and multilingual studies
+01	09	L1 acquisition and processing
+01	10	Bilingual and L2 acquisition and processing
+01	11	Combining speech and other biosignals
+01	12	Other topics in Speech Perception, Production, and Acquisition by Human Listeners
+02		Phonetics, Phonology, and Prosody
+02	01	Phonetics and phonology
+02	02	Language descriptions
+02	03	Acoustic phonetics
+02	04	Articulatory and acoustic features of prosody
+02	05	Perception of prosody
+02	06	Sociophonetics and sound changes
+02	07	Phonetics of L1-L2 interaction
+02	08	Forensic phonetics
+02	09	Phonetic and linguistic aspects of paralinguistics
+02	10	Other topics in Phonetics, Phonology, and Prosody
+03		Paralinguistics in Speech and Language: Human and Automatic Analysis and Processing
+03	01	Analysis of speaker states
+03	02	Analysis of speaker traits
+03	03	Automatic analysis of speaker states
+03	04	Automatic analysis of speaker traits
+03	05	Social signal processing
+03	06	Sentiment analysis and opinion mining
+03	07	Perception of paralinguistic phenomena
+03	08	Multimodal paralinguistics
+03	09	Other topics in Paralinguistics in Speech and Language
+04		Speaker and Language Identification
+04	01	Language identification and verification, language diarization
+04	02	Dialect and accent recognition
+04	03	Speaker verification and identification
+04	04	Features for speaker and language recognition
+04	05	Speaker diarization
+04	06	Evaluation of speaker and language identification systems
+04	07	Multimodal/multimedia speaker recognition and diarization
+04	08	Other topics in Speaker and Language Identification
+05		Analysis of Speech and Audio Signals
+05	01	Bioacoustics
+05	02	Speech signal analysis and representation
+05	03	Acoustic event detection and acoustic scene classification
+05	04	Speech and audio segmentation
+05	05	Speech type classification
+05	06	Voice activity detection and audio segmentation
+05	07	Detection, inference, and segmentation of phonetic events and articulation
+05	08	Source separation
+05	09	Spatial audio
+05	10	Singing analysis
+05	11	Speech and audio quality assessment
+05	12	Other topics in Analysis of Speech and Audio Signals
+06		Speech Coding and Enhancement
+06	01	Speech coding and transmission
+06	02	Noise reduction for speech signals
+06	03	Speech enhancement: single-channel
+06	04	Speech enhancement: multi-channel
+06	05	Speech intelligibility
+06	06	Speech enhancement in hearing aids
+06	07	Dereverberation for speech signals
+06	08	Echo cancellation for speech signals
+06	09	Evaluation of speech transmission, coding, and enhancement
+06	10	Bandwidth expansion
+06	11	Privacy and security in speech communication
+06	12	Other topics in Speech Coding and Enhancement
+07		Speech Synthesis and Spoken Language Generation
+07	01	Grapheme-to-phoneme conversion for synthesis
+07	02	Text processing for speech synthesis
+07	03	Signal processing methods for synthesis
+07	04	Speech synthesis paradigms and methods
+07	05	Towards end-to-end speech synthesis
+07	06	Statistical parametric speech synthesis
+07	07	Prosody modeling and generation
+07	08	Expression, emotion, and personality generation
+07	09	Synthesis of singing voices
+07	10	Voice modification, conversion, and morphing
+07	11	Cross-lingual and multilingual aspects in speech synthesis, code switching
+07	12	Multimodal synthesis for avatars and talking heads
+07	13	Tools and data for speech synthesis
+07	14	Evaluation of speech synthesis
+07	15	Other topics in Speech Synthesis and Spoken Language Generation
+08		Speech Recognition: Signal Processing, Acoustic Modeling, Robustness, Adaptation
+08	01	Feature extraction and low-level feature modeling for ASR
+08	02	Prosodic features and models
+08	03	Robustness against noise or reverberation
+08	04	Far field and microphone array speech recognition
+08	05	Novel neural network architectures (e. g., sequence models, LSTM variants)
+08	06	Neural network training methods (including new objective functions)
+08	07	Discriminative acoustic training methods for ASR
+08	08	Acoustic model adaptation (bandwidth, emotion, accent)
+08	09	Speaker adaptation and normalization
+08	10	Pronunciation variants and modeling for speech recognition
+08	11	Cross-lingual and multilingual aspects, non-native accents
+08	12	Acoustic modeling for conversational speech (dialog, interaction)
+08	13	Other topics in Speech Recognition: Signal Processing, Acoustic Modeling, Robustness, Adaptation
+09		Speech Recognition: Architecture, Search, and Linguistic Components
+09	01	Lexical modeling (lexicon learning, units, morphological models,...)
+09	02	Language model adaptation (domain, diachronic adaptation)
+09	03	Language modeling
+09	04	Search methods, decoding algorithms, lattices, multipass strategies
+09	05	New computational strategies, data-structures for ASR
+09	06	Computational resource constrained speech recognition
+09	07	Confidence measures
+09	08	Cross-lingual and multilingual components for speech recognition, code switching
+09	09	Other topics in Speech Recognition: Architecture, Search, and Linguistic Components
+10		Speech Recognition: Technologies and Systems for New Applications
+10	01	Multimodal systems
+10	02	Applications in education and learning (incl.  CALL, assessment of fluency)
+10	03	Applications in medical practice (CIS, voice assessment, etc.)
+10	04	Rich transcription
+10	05	Innovative products and services based on speech technologies
+10	06	New paradigms (e. g., artic. models, topic models)
+10	07	Zero-resource speech recognition
+10	08	Other topics in Speech Recognition: Technologies and Systems for New Applications
+11		Spoken Dialog Systems and Conversational Analysis
+11	01	Spoken dialog systems
+11	02	Discourse and dialog structures
+11	03	Multimodal interaction and interfaces
+11	04	Conversation, communication, and interaction
+11	05	Analysis of verbal, co-verbal, and nonverbal behavior
+11	06	Language modeling for conversational speech (dialog, interaction)
+11	07	Interactive systems for speech/language training, therapy, communication aids
+11	08	Stochastic modeling for dialog
+11	09	Question-answering from speech
+11	10	Systems for spoken language understanding
+11	11	Other topics in Spoken Dialog Systems and Conversational Analysis
+12		Spoken Language Processing: Translation, Information Retrieval, Summarization, Resources, and Evaluation
+12	01	Spoken machine translation
+12	02	Speech-to-speech translation systems
+12	03	Voice search
+12	04	Spoken term detection
+12	05	Indexing, mining, and retrieval of speech and audio documents
+12	06	Speech and multimodal resources
+12	07	Evaluation of speech technology systems
+12	08	Metadata descriptions of speech, audio, and text resources
+12	09	Methodologies and tools for language resource construction, annotation, and evaluation
+12	10	Spoken document summarization
+12	11	Semantic analysis and classification
+12	12	Entity extraction from speech
+12	13	Other topics in Spoken Language Processing: Translation, Information Retrieval, Summarization, Resources, and Evaluation
+13		Speech, Voice, and Hearing Disorders
+13	01	Speech disorders
+13	02	Voice disorders
+13	03	Hearing disorders
+13	04	Phonation and voice quality
+13	05	Automatic assessment of pathological speech
+13	06	Parkinson's Disease
+13	07	Dysarthric speech
+13	08	Paralinguistics of pathological speech and language
+13	09	Applications for voice, speech, and hearing assessment
+13	10	Speech technology for disordered speech
+13	11	Speech technology for disordered hearing
+13	12	Speech technology for disordered voice
+13	13	Silent speech interfaces
+13	14	Other topics in Speech, Voice, and Hearing Disorders
+14		Special Sessions

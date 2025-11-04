@@ -10,7 +10,7 @@ from bertopic.representation import KeyBERTInspired
 
 # Data
 import pandas as pd
-from pkg_resources import resource_filename
+from importlib import resources
 
 # File / Dataset
 from isca_archive.analyze.common.dataset import ISCAArchiveProcessedDataset
@@ -41,8 +41,9 @@ def add_subparsers(subparsers):
         help="Comma separated of the years to focus on",
     )
 
+    # TODO: this is not used, double check if it is needed here
     parser.add_argument(
-        "--ignore-research-keywords",
+        "--ignore-isca-stopwords",
         default=False,
         action="store_true",
         help="Add the research papers/abstracts' keywords to the list of stop words",
@@ -71,7 +72,7 @@ def main(args: argparse.Namespace):
 
     # Load candidate topics
 
-    df_areas = pd.read_csv(resource_filename("isca_archive", "resources/is_area_labels.tsv"), sep="\t")
+    df_areas = pd.read_csv(resources.files("isca_archive")/"resources/is_area_labels.tsv", sep="\t")
     if args.secondary_areas:
         logger.info("Use the secondary areas")
         df_areas = df_areas[~pd.isna(df_areas.secondary_id)]

@@ -12,7 +12,7 @@ import numpy as np
 import fitz
 import json
 import pandas as pd
-from pkg_resources import resource_filename
+from importlib import resources
 
 
 class ISCAArchiveProcessorDataset(Dataset):
@@ -179,7 +179,7 @@ class ISCAArchiveProcessorDataset(Dataset):
             paper_id = f"{int(paper_id):04d}"
 
         # NOTE: could be optimized to not load this everytime !
-        conf_resource = pathlib.Path(resource_filename("isca_archive", f"resources/is_areas/{conference}.tsv"))
+        conf_resource = resources.files("isca_archive")/f"resources/is_areas/{conference}.tsv"
         if not conf_resource.is_file():
             raise Exception("The area file doesn't exist")
 
@@ -194,7 +194,7 @@ class ISCAArchiveProcessorDataset(Dataset):
         if area_id == "00":
             return None
 
-        df_area_labels = pd.read_csv(resource_filename("isca_archive", "resources/is_area_labels.tsv"), sep="\t")
+        df_area_labels = pd.read_csv(resources.files("isca_archive")/"resources/is_area_labels.tsv", sep="\t")
 
         label = df_area_labels.loc[
             (df_area_labels.primary_id == area_id) & pd.isna(df_area_labels.secondary_id), "label"

@@ -227,7 +227,7 @@ def main(args: argparse.Namespace):
     topic_model.save(
         model_dir,
         serialization="safetensors",
-        save_ctfidf=True,
+        # save_ctfidf=True, # FIXME: this leads to a serialization error, but I don't quite get why
         save_embedding_model=embedding_model,
     )
 

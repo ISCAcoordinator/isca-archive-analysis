@@ -6,14 +6,14 @@ requires = [
 
 [project]
 name = "isca-archive-analysis"
-version = "2024"
+version = "2025"
 description='Toolkits to conduct a set of analysis on the ISCA archive metadata'
 readme = {file="README.md", content-type = "text/markdown"}
 authors = [
   {name="Martin Cooke", email="m.cooke@ikerbasque.org"},
   {name="Sébastien Le Maguer", email="sebastien.lemaguer@helsinki.fi"}
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12,<3.13"
 classifiers = [
   'Development Status :: 4 - Beta',
   'Intended Audience :: End Users/Desktop',
@@ -25,7 +25,7 @@ dependencies = [
   "bertopic[spacy]==0.16.3",
   "wordcloud==1.9.3",
   "lxml==5.3.0",
-  "bibtexparser==1.4.1"
+  "bibtexparser==1.4.1",
   'PyMuPDF==1.24.1',
   'bs4==0.0.1',
   'chardet==5.2.0',
@@ -43,6 +43,12 @@ dev = [
   "pre-commit",
   "black"
 ]
+
+
+[tool.setuptools.package-data]
+isca_archive = [
+  "**/resources/**/*.*"
+]  # FIXME: this is a bit hardcore here
 
 [project.urls]
 Homepage = "https://github.com/ISCACoordinator/isca-archive-analysis"
