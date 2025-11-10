@@ -117,8 +117,9 @@ class ISCAArchiveProcessorDataset(Dataset):
 
         pdf_file = None
         try:
-            pdf_file = self._get_pdf(conf_id, paper_id)
             if self._load_full_text and not self._use_isca_keywords:
+                pdf_file = self._get_pdf(conf_id, paper_id)
+                self._logger.info("Loading the full text")
                 # NOTE: PDF extraction process to be added later, now use hardcoded input!
                 # tmp = self._load_pdf_content(pdf_file)
 
@@ -133,6 +134,7 @@ class ISCAArchiveProcessorDataset(Dataset):
                 if tmp is not None:
                     entry["content_type"] = "full_text"
                     entry["content"] = tmp
+                entry["pdf_path"] = pdf_file
             elif self._use_isca_keywords:
                 if self._use_title:
                     entry["content_type"] = "title+"
@@ -144,11 +146,10 @@ class ISCAArchiveProcessorDataset(Dataset):
                 entry["content_type"] += "keywords"
                 entry["content"] += self._keywords[paper_id]
 
-            entry["pdf_path"] = pdf_file
         except Exception as ex:
             self._logger.warning(f'The submission ID "{paper_id}" doesn\'t seem valid (pdf extraction failure): {ex}')
 
-        if False:
+        if False: # TODO: this is diabled for now as it is unclear on how to manage this
             references = []
             try:
                 if pdf_file is not None:
