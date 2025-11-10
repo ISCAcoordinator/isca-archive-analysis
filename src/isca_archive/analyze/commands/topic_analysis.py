@@ -13,7 +13,7 @@ from sentence_transformers import SentenceTransformer
 from umap import UMAP
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
-from kmeans_pytorch import KMeans as PTKMeans
+from balanced_kmeans_pytorch import KMeans as PTKMeans
 
 import torch
 import numpy as np
